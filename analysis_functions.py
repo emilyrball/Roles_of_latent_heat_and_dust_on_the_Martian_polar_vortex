@@ -164,3 +164,157 @@ def calc_eddy_enstr(q):
     Z = 1/(np.pi)*tlon*tlat*qp
 
     return Z
+  
+def calc_streamfn(lats, pfull, vz, **kwargs):
+    '''
+    Calculate meridional streamfunction from zonal mean meridional wind.
+    
+    Parameters
+    ----------
+
+    lats   : array-like, latitudes, units (degrees)
+    pfull  : array-like, pressure levels, units (Pa)
+    vz     : array-like, zonal mean meridional wind, dimensions (lat, pfull)
+    radius : float, planetary radius, optional, default 3.39e6 m
+    g      : float, gravity, optional, default 3.72 m s**-2
+
+    Returns
+    -------
+
+    psi   : array-like, meridional streamfunction, dimensions (lat, pfull),
+            units (kg/s)
+    '''
+
+    radius = kwargs.pop('radius', 3.39e6)
+    g      = kwargs.pop('g', 3.72)
+
+    coeff = 2 * np.pi * radius / g
+
+    psi = np.empty_like(vz.values)
+    for ilat in range(lats.shape[0]):
+        psi[0, ilat] = coeff * np.cos(np.deg2rad(lats[ilat]))*vz[0, ilat] * pfull[0]
+        for ilev in range(pfull.shape[0])[1:]:
+            psi[ilev, ilat] = psi[ilev - 1, ilat] + coeff*np.cos(np.deg2rad(lats[ilat])) \
+                              * vz[ilev, ilat] * (pfull[ilev] - pfull[ilev - 1])
+    
+    #psi = xr.DataArray(psi, coords = {"pfull" : pfull.values,
+    #                                  "lat"   : lats.values})
+    #psi.attrs['units'] = 'kg/s'
+
+    return psi
+  
+def calc_jet_lat(u, lats, plot = False):
+    '''
+    Function to calculate location and strength of maximum given zonal wind
+    u(lat) field
+
+    Parameters
+    ----------
+
+    u    : array-like
+    lats : array-like. Default use will be to calculate jet on a given pressure
+           level, but this array may also represent pressure level.
+
+    Returns
+    -------
+
+    jet_lat : latitude (pressure level) of maximum zonal wind
+    jet_max : strength of maximum zonal wind
+    '''
+
+    # Restrict to 10 points around maximum
+
+    u_max = np.where(u == np.ma.max(u.values))[0][0]
+
+    u_near = u[u_max-1:u_max+2]
+    lats_near = lats[u_max-1:u_max+2]
+    # Quartic fit, with smaller lat spacing
+    coefs = np.ma.polyfit(lats_near,u_near,2)
+    fine_lats = np.linspace(lats_near[0], lats_near[-1],200)
+    quad = coefs[2]+coefs[1]*fine_lats+coefs[0]*fine_lats**2
+    # Find jet lat and max
+    jet_lat = fine_lats[np.where(quad == max(quad))[0][0]]
+    jet_max = coefs[2]+coefs[1]*jet_lat+coefs[0]*jet_lat**2
+    # Plot fit?
+    if plot:
+        print (jet_max)
+        print (jet_lat)
+        plt.plot(lats_near, u_near)
+        plt.plot(fine_lats, quad)
+        plt.show()
+
+    return jet_lat, jet_max
+
+def calc_Hadley_lat(u, lats, plot = False):
+    '''
+    Function to calculate location of 0 streamfunction.
+
+    Parameters
+    ----------
+
+    u    : array-like
+    lats : array-like. Default use will be to calculate jet on a given pressure
+           level, but this array may also represent pressure level.
+
+    Returns
+    -------
+
+    jet_lat : latitude (pressure level) of 0 streamfunction
+    '''
+
+    asign = np.sign(u)#.values)
+    signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
+    signchange[0] = 0
+
+    
+
+    for i in range(len(signchange)):
+        if u[i] > 0 and i < len(signchange) - 4:
+            continue
+        signchange[i] = 0
+    
+    for i in range(len(signchange)):
+        if signchange[i] == 0:
+            continue
+        u_0 = i
+    
+    if all(signchange[i] == 0 for i in range(len(signchange))):
+        if u[0] > 0:
+            u_0 = 0
+        else:
+            u_0 = 1
+
+        #u_0 = np.where(u == np.ma.min(np.absolute(u)))[0][0]
+
+    # Restrict to 10 points around maximum
+    #u_0 = np.where(u == np.ma.min(np.absolute(u.values)))[0][0]
+    if u_0 > 1:
+        u_near = u[u_0-2:u_0+2]
+        lats_near = lats[u_0-2:u_0+2]
+
+        # Quartic fit, with smaller lat spacing
+        coefs = np.ma.polyfit(lats_near,u_near,3)
+        fine_lats = np.linspace(lats_near[0], lats_near[-1],300)
+        quad = coefs[3]+coefs[2]*fine_lats+coefs[1]*fine_lats**2 \
+                    +coefs[0]*fine_lats**3
+        # Find jet lat and max
+        #jet_lat = fine_lats[np.where(quad == max(quad))[0][0]]
+
+        minq = min(np.absolute(quad))
+        jet_lat = fine_lats[np.where(np.absolute(quad) == minq)[0][0]]
+        jet_max = coefs[2]+coefs[1]*jet_lat+coefs[0]*jet_lat**2
+        # Plot fit?
+        if plot:
+            print (jet_max)
+            print (jet_lat)
+            plt.plot(lats_near, u_near)
+            plt.plot(fine_lats, quad)
+            plt.show()
+    elif u_0 == 0:
+        jet_lat = 90
+        jet_max = u[-1]
+    else:
+        jet_lat = np.nan
+        jet_max = np.nan
+
+    return jet_lat, jet_max
