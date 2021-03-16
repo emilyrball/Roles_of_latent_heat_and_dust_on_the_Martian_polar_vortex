@@ -1,6 +1,9 @@
 '''
 Calculates potential vorticity on isobaric levels from Isca data. Optionally
 interpolates the data to isentropic coordinates.
+
+This is an older version of the PV calculation script calculate_PV_Isca.py
+that has not been parallelized, but it is slightly easier to follow.
 '''
 
 import numpy as np
