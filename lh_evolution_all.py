@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -19,36 +19,6 @@ import matplotlib.path as mpath
 import matplotlib
 
 import pandas as pd
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-from Isca_instantaneous_PV_all import make_colourmap
-
-
-def calc_eddy_enstr(q):
-    qbar = q.mean(dim='lon')
-    qbar = qbar.expand_dims({'lon':q.lon})
-
-    qprime = q - qbar
-    
-    coslat = np.cos(np.pi/180 * q.lat)
-    tot = sum(coslat)
-    qp2 = qprime*coslat
-    qp2 = qp2**2
-    qp3 = qp2.sum(dim='lon')/tot
-    qp3 = qp3.sum(dim='lat')
-    Z = 1/(4*np.pi)*qp3
-
-    return Z
-
-def where_lh_mask(d):
-    '''
-    Returns a Boolean array with value 1 where lh released, 0 otherwise.
-    '''
-    
-
-
 if __name__ == "__main__":
 
     if plt.rcParams["text.usetex"]:
@@ -62,6 +32,7 @@ if __name__ == "__main__":
     pfull = 2.0
     latmin = 60
     latmax = 90
+    
     nh = True
     if nh:
         nh = 'nh_'
@@ -172,7 +143,7 @@ if __name__ == "__main__":
             
             
 
-    boundaries, _, _, cmap, norm = make_colourmap(0, 0.71, 0.05,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(0, 0.71, 0.05,
                                         col = 'cet_kbc', extend = 'max')
 
     plt.subplots_adjust(hspace=.11, wspace = 0.05)
@@ -189,10 +160,10 @@ if __name__ == "__main__":
 
 
     if EMARS == True:
-        PATH = 'link-to-anthro/EMARS'
+        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
         files = '/*isobaric*'
     else:
-        PATH = 'link-to-anthro/OpenMARS/Isobaric'
+        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isobaric'
         files = '/*isobaric*my*'
 
     
@@ -214,86 +185,10 @@ if __name__ == "__main__":
         d_open = d_open.sortby('time', ascending=True)
         
 
-    #t = t.where(d.MY==32,drop=True).mean(dim='lon',skipna=True)
-
-    #Ls = d.Ls.where(d.MY==32,drop=True).sel(lon=d.lon[0])
-
-
-    #c = axs[1,0].contourf(Ls, t.lat, t.transpose('lat', 'time'), norm = norm,
-    #                levels = [-50] + boundaries + [150], cmap=cmap)
-
-
     plt.savefig('Thesis/lh_evolution_'+nh+str(pfull)+'hPa'+EMARS+'.pdf',
                 bbox_inches='tight',pad_inches=0.1)
 
-    #exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel']
-
-    ##labels = ['Standard', 'Latent Heat', 'Dust', 'Latent Heat and Dust',
-    #          #None, None, None, None]
-    #          #'Standard', 'Latent Heat', 'Dust', 'Latent Heat and Dust']
-
-    #location = ['silurian']
-
-    ##filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    #start_file = [33]
-    #end_file = [92]
-
-    #freq = 'daily'
-
-    #interp_file = 'atmos_'+freq+'_interp_new_height_temp.nc'
-
-    #for i in range(len(start_file)):
-    #    print(exp[i])
-
-    #    filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-    #    start = start_file[i]
-    #    end = end_file[i]
-
-    #    _, _, i_files = filestrings(exp[i], filepath, start, end, interp_file)
-
-    #    d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-    #                        combine='nested')
-
-
-        # reduce dataset
-    #    d = d.astype('float32')
-    #    d = d.sortby('time', ascending=True)
-    #    d = d[["dt_tg_lh_condensation", "lh_rel", "mars_solar_long", "temp"]]
-    #    d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-
-    #    d, index = assign_MY(d)
-    #    d = d.rename({'pfull':'plev'})
-    #    d = d.interp({'plev':d_open.plev, 'lat':d_open.lat, 'lon':d_open.lon},
-    #                  method='linear')
-    #    x = d.sel(plev = pfull , method='nearest').squeeze()
-        #tc = 149.2 + 6.48*np.log(0.135*x.plev.values)
-        #t = x.temp.where(x.temp <= tc, other = np.nan)
-        #t = tc - t
-
-        #
-    #    t = x.dt_tg_lh_condensation.where(x.dt_tg_lh_condensation > 0,
-    #                                                    other = np.nan)
-    #    x["tstar"] = t
-    #    print('Averaged over '+str(np.max(x.MY.values))+' MY')
-
-    #    dsr, N, n = make_coord_MY(x, index)
-    #    year_mean = dsr.mean(dim='MY', skipna=True)
-    #    Ls = year_mean.mars_solar_long#[0,:]
-        
-    #    year_mean = year_mean.tstar.mean(dim='lon',skipna=True) * 40
-
-        
-
-    #    c = axs[1,1].contourf(Ls, year_mean.lat,
-    #                year_mean, norm = norm, cmap=cmap,
-    #                levels = [-50] + boundaries + [150])
-
-        #plt.savefig('Thesis/lh_evolution_'+str(pfull)+'hPa.pdf',
-        #        bbox_inches='tight',pad_inches=0.1)
-
-
-
-    #d = d_open.interp({'lat':d_isca.lat,'lon':d_isca.lon})
+    
     d = d_open.astype('float32')
     
     d = d.sel(plev = pfull, method='nearest').squeeze()
@@ -322,43 +217,19 @@ if __name__ == "__main__":
             di = di.sortby(di.Ls, ascending=True)
         Ls = di.Ls
 
-        #di = di.sel(time = di.time[slice(None,None,10)])
         
-        
-        #print("loading")
-        #d = d.load()
-        #print("loaded")
-        #Z = []
-        
-        #for j in range(len(di.time)):
-            #print(j)
-        #    m = 0
-        #    for k in range(len(di.lat)):
-        #        print(k)
-        #        for l in range(len(di.lon)):
-        #            djkl = di.tmp.sel({'time':di.time[j],
-        #                           'lat':di.lat[k],
-        #                           'lon':di.lon[l]}, method='nearest')
-        #            if djkl.values < tc:
-        #                m += 1
-        #            
-        #    Z.append(m)
-        #print(Z)
         coslat = np.cos(np.pi/180 * di.lat)
         tot = sum(np.cos(np.pi/180 * di.lat))
    
 
-        #print('Beginning mask')
         Zi = di.tmp.where(di.tmp < tc, other=tc)
-        #print('Ending mask')
+
         Zi = tc - Zi
-        #Zi = Zi.where(Zi == 0, other=1)
-        #print('Beginning sum')
         
         Zi = Zi * coslat
         Zi = Zi.mean(dim='lon',skipna=True)#/tot
         Zi = Zi.sum(dim='lat',skipna = True) / tot
-        #print('Ending sum')
+
         Zi = Zi.chunk({'time':'auto'})
         Zi = Zi.rolling(time=smooth,center=True)
 
@@ -439,7 +310,7 @@ if __name__ == "__main__":
                     open_std.transpose('lat','time'), colors='0.8',
                     levels = [0.05,0.1],linewidths=0.8)
     
-    c0_.levels = [cPV.nf(val) for val in c0_.levels]
+    c0_.levels = [funcs.nf(val) for val in c0_.levels]
     axs[2,0].clabel(c0_, c0_.levels, inline=1, #fmt=fmt,
                     fontsize=10)
 
@@ -486,7 +357,7 @@ if __name__ == "__main__":
         start = start_file[i]
         end = end_file[i]
 
-        _ ,_ , i_files = filestrings(exp[i], filepath, start,
+        _ ,_ , i_files = funcs.filestrings(exp[i], filepath, start,
                                         end, interp_file)
 
         d_isca = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
@@ -505,7 +376,7 @@ if __name__ == "__main__":
         d = d.where(d.mars_solar_long != 354.3762, other=359.762)
         print(d.mars_solar_long[0].values)
 
-        d, index = assign_MY(d)
+        d, index = funcs.assign_MY(d)
 
         x = d.sel(plev=pfull, method='nearest').squeeze()
         
@@ -514,10 +385,6 @@ if __name__ == "__main__":
         print('Averaged over '+str(np.max(x.MY.values))+' MY')
         
         ens = x.dt_tg_lh_condensation.where(x.dt_tg_lh_condensation != np.nan, other = 0.0)
-        
-
-        #ens = x.dt_tg_lh_condensation.where(x.dt_tg_lh_condensation == 0., other = 1.0)
-        #ens = x.dt_tg_lh_condensation
 
         coslat = np.cos(np.pi/180 * ens.lat)
         
@@ -526,7 +393,7 @@ if __name__ == "__main__":
 
         x["ens"] = ens 
 
-        dsr, N, n = make_coord_MY(x, index)
+        dsr, N, n = funcs.make_coord_MY(x, index)
         x = dsr.dt_tg_lh_condensation.where(dsr.MY == dsr.MY[-1],
                             drop=True)
         x = x.squeeze()
@@ -599,7 +466,7 @@ if __name__ == "__main__":
     c1 = axs[1,1].contour(isca_ls[0], year_isca.lat,
                     isca_std.transpose('lat','new_time'), colors='0.8',
                     levels = [0.1], linewidths=0.8)
-    c1.levels = [cPV.nf(val) for val in c1.levels]
+    c1.levels = [funcs.nf(val) for val in c1.levels]
     axs[1,1].clabel(c1, c1.levels, inline=1, fontsize=10)
 
     cf1_ = axs[2,1].contourf(isca_ls[0], year_isca.lat,
