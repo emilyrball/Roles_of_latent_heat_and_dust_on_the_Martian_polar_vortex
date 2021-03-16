@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -22,139 +22,6 @@ import pandas as pd
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-
-def calc_jet_lat(u, lats, plot = False):
-    '''
-    Function to calculate location and strength of maximum given zonal wind
-    u(lat) field
-
-    Parameters
-    ----------
-
-    u    : array-like
-    lats : array-like. Default use will be to calculate jet on a given pressure
-           level, but this array may also represent pressure level.
-
-    Returns
-    -------
-
-    jet_lat : latitude (pressure level) of maximum zonal wind
-    jet_max : strength of maximum zonal wind
-    '''
-
-    # Restrict to 10 points around maximum
-
-    u_max = np.where(u == np.ma.max(u.values))[0][0]
-
-    if u_max == 0:
-        jet_lat = 90
-        jet_max = u[-1]
-    else:
-        u_near = u[u_max-1:u_max+2]
-        lats_near = lats[u_max-1:u_max+2]
-        # Quartic fit, with smaller lat spacing
-        coefs = np.ma.polyfit(lats_near,u_near,2)
-        fine_lats = np.linspace(lats_near[0], lats_near[-1],200)
-        quad = coefs[2]+coefs[1]*fine_lats+coefs[0]*fine_lats**2
-        # Find jet lat and max
-        jet_lat = fine_lats[np.where(quad == max(quad))[0][0]]
-        jet_max = coefs[2]+coefs[1]*jet_lat+coefs[0]*jet_lat**2
-        # Plot fit?
-    
-    return jet_lat, jet_max
-
-def calc_Hadley_lat(u, lats, plot = False):
-    '''
-    Function to calculate location of 0 streamfunction.
-
-    Parameters
-    ----------
-
-    u    : array-like
-    lats : array-like. Default use will be to calculate jet on a given pressure
-           level, but this array may also represent pressure level.
-
-    Returns
-    -------
-
-    jet_lat : latitude (pressure level) of 0 streamfunction
-    '''
-
-    asign = np.sign(u)#.values)
-    signchange = ((np.roll(asign, 1) - asign) != 0).astype(int)
-    signchange[0] = 0
-
-    
-
-    for i in range(len(signchange)):
-        if u[i] > 0 and i < len(signchange) - 4:
-            continue
-        signchange[i] = 0
-    
-    for i in range(len(signchange)):
-        if signchange[i] == 0:
-            continue
-        u_0 = i
-    
-    if all(signchange[i] == 0 for i in range(len(signchange))):
-        if u[0] > 0:
-            u_0 = 0
-        else:
-            u_0 = -1
-
-        #u_0 = np.where(u == np.ma.min(np.absolute(u)))[0][0]
-
-    # Restrict to 10 points around maximum
-    #u_0 = np.where(u == np.ma.min(np.absolute(u.values)))[0][0]
-    if u_0 > 1:
-        u_near = u[u_0-2:u_0+2]
-        lats_near = lats[u_0-2:u_0+2]
-
-        # Quartic fit, with smaller lat spacing
-        coefs = np.ma.polyfit(lats_near,u_near,3)
-        fine_lats = np.linspace(lats_near[0], lats_near[-1],300)
-        quad = coefs[3]+coefs[2]*fine_lats+coefs[1]*fine_lats**2 \
-                    +coefs[0]*fine_lats**3
-        # Find jet lat and max
-        #jet_lat = fine_lats[np.where(quad == max(quad))[0][0]]
-
-        minq = min(np.absolute(quad))
-        jet_lat = fine_lats[np.where(np.absolute(quad) == minq)[0][0]]
-        jet_max = coefs[3]+coefs[2]*jet_lat+coefs[1]*jet_lat**2 \
-                    +coefs[0]*jet_lat**3
-
-    elif u_0 == 0:
-        jet_lat = 90
-        jet_max = u[-1]
-
-    elif u_0 == 1:
-        u_near = u[u_0-1:u_0+2]
-        lats_near = lats[u_0-1:u_0+2]
-
-        # Quartic fit, with smaller lat spacing
-        coefs = np.ma.polyfit(lats_near,u_near,2)
-        fine_lats = np.linspace(lats_near[0], lats_near[-1],200)
-        quad = coefs[2]+coefs[1]*fine_lats+coefs[0]*fine_lats**2 
-        # Find jet lat and max
-        #jet_lat = fine_lats[np.where(quad == max(quad))[0][0]]
-
-        minq = min(np.absolute(quad))
-        jet_lat = fine_lats[np.where(np.absolute(quad) == minq)[0][0]]
-        jet_max = coefs[2]+coefs[1]*jet_lat+coefs[0]*jet_lat**2
-
-    else:
-        print(u.values)
-        jet_lat = np.nan
-        jet_max = np.nan
-
-    return jet_lat, jet_max
-
-def moving_average(x, w):
-    return np.convolve(x, np.ones(w), 'valid') / w
 
 if __name__ == "__main__":
 
@@ -223,7 +90,7 @@ if __name__ == "__main__":
     ax2.set_ylabel('$\psi$ strength ($10^8$ kg/s)', fontsize = 20)
 
     ##### get data #####
-    PATH = 'link-to-anthro/OpenMARS/Streamfn'
+    PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Streamfn'
     
     figpath = 'OpenMARS_figs/Hadley_lats/'
     
@@ -247,19 +114,8 @@ if __name__ == "__main__":
         #d = d.where(Lsmin - 10 <= d.time, drop=True)
 
         plev = d.pfull.sel(pfull = plev, method = "nearest").values
-        print(plev)
 
         d = d.sel(time = d.time[slice(None,None,5)], method = "nearest")
-
-        #d = d.chunk({'time':'auto'})
-        #d = d.rolling(time = 10, center = True)
-        #d = d.mean().dropna("time")
-
-        #d = d.sel(time = d.time[slice(None,None,15)])
-        
-        #print(di)
-        #di = di.where(di != np.nan, drop = True)
-        #print(di)
 
         ls = d.time
 
@@ -271,10 +127,6 @@ if __name__ == "__main__":
         psi_mag = []
 
 
-
-        print(ls.shape[0])
-
-
         for j in range(ls.shape[0]):
             lsj = ls[j]
             psi_j = d.where(d.time == lsj, drop = True).squeeze()
@@ -283,8 +135,8 @@ if __name__ == "__main__":
             
             # edge and strength of Hadley cell
             psi_j = psi_j.sel(pfull = plev, method = "nearest").squeeze()
-            _, psi_max = calc_jet_lat(psi_j.compute(), psi_j.lat)
-            psi0_lat, _ = calc_Hadley_lat(psi_j.load(), psi_j.lat.load())
+            _, psi_max = funcs.calc_jet_lat(psi_j.compute(), psi_j.lat)
+            psi0_lat, _ = funcs.calc_Hadley_lat(psi_j.load(), psi_j.lat.load())
             psi_lat.append(psi0_lat)
             psi_mag.append(psi_max)
             
@@ -298,7 +150,6 @@ if __name__ == "__main__":
         )
 
         psi_new = psi_new.where(psi_new.lat != np.nan, drop = True)
-        psi_new = psi_new.where(psi_new.time > psi_new.time[9], drop = True)
         
         psi_new = psi_new.chunk({'time':'auto'})
         psi_new = psi_new.rolling(time = 70)
@@ -325,7 +176,7 @@ if __name__ == "__main__":
     fig.savefig(figpath+'Hadley_edge_max_jet_lats_'+str(plev)+'Pa_new.pdf',
                             bbox_inches='tight', pad_inches = 0.1)
     ##### get data #####
-    PATH = 'link-to-anthro/OpenMARS/Isobaric'
+    PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isobaric'
     infiles = '/isobaric*'
 
     for i in [24,25,26,28,29,30,31,32]:
@@ -361,7 +212,7 @@ if __name__ == "__main__":
         for j in range(ls.shape[0]):
             lsj = ls[j]
             uj=u.where(di.Ls==lsj, drop=True)
-            latmax, u_p_max = calc_jet_lat(uj.squeeze().compute(), uj.lat)
+            latmax, u_p_max = funcs.calc_jet_lat(uj.squeeze().compute(), uj.lat)
             lat_max.append(latmax)
             mag_max.append(u_p_max)
 
