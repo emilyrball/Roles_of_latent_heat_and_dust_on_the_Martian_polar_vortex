@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -14,16 +14,7 @@ import matplotlib.ticker as ticker
 from matplotlib import (cm, colors)
 import matplotlib.path as mpath
 
-from palettable.scientific.sequential import imola
-
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-from Isca_instantaneous_PV_all import (stereo_plot, make_stereo_plot,
-                                       make_colourmap)
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import assign_MY
 
 if __name__== "__main__":
 
@@ -65,14 +56,14 @@ if __name__== "__main__":
     freq = 'daily'
 
     interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
-    ilev = 300.
+    ilev = 350.
 
 
-    theta, center, radius, verts, circle = stereo_plot()
+    theta, center, radius, verts, circle = funcs.stereo_plot()
 
-    vmin = 15
-    vmax = 76
-    step = 5
+    vmin = 10
+    vmax = 101
+    step = 10
 
     fig, axs = plt.subplots(nrows=2,ncols=4, figsize = (14,9),
                             subplot_kw = {'projection':ccrs.NorthPolarStereo()})
@@ -83,7 +74,7 @@ if __name__== "__main__":
         
         ax.set_title(labels[j],weight='bold',fontsize=20)
 
-    boundaries, _, _, cmap, norm = make_colourmap(vmin, vmax, step,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(vmin, vmax, step,
                                                 col = 'viridis', extend = 'both')
 
 
@@ -94,7 +85,7 @@ if __name__== "__main__":
         start = start_file[i]
         end = end_file[i]
 
-        _, _, i_files = filestrings(exp[i], filepath, start, end, interp_file)
+        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
 
         d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
                             combine='nested')
@@ -120,13 +111,13 @@ if __name__== "__main__":
         # Lait scale PV
         theta = x.ilev
         print("Scaling PV")
-        laitPV = cPV.lait(x.PV,theta,theta0,kappa=kappa)
+        laitPV = funcs.lait(x.PV,theta,theta0,kappa=kappa)
         x["scaled_PV"]=laitPV
 
         # individual plots
         for j, ax in enumerate(fig.axes):
             if j==i:
-                make_stereo_plot(ax, [latm, 80, 60, 50],
+                funcs.make_stereo_plot(ax, [latm, 80, 60, 50],
                           [-180, -120, -60, 0, 60, 120, 180],
                           circle, alpha = 0.3, linestyle = '--',)
                 a = x.scaled_PV.mean(dim='time').squeeze() * 10**5
@@ -137,7 +128,7 @@ if __name__== "__main__":
                 c = ax.contour(x.lon, x.lat, u, colors='0.8', levels=[0,40,80,120],
                                 transform=ccrs.PlateCarree(),linewidths = 1)
 
-                c.levels = [cPV.nf(val) for val in c.levels]
+                c.levels = [funcs.nf(val) for val in c.levels]
                 ax.clabel(c, c.levels, inline=1, fmt=fmt, fontsize=15)
                 print(i)
                 plt.savefig(figpath+'/Isca_average_winter_PV_'+str(ilev)+'K_'+str(Lsmin)+'-'+str(Lsmax)+'_all_exp.png',
