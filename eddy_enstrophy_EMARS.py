@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -20,11 +20,6 @@ import matplotlib
 import pandas as pd
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-
 
 if __name__ == "__main__":
 
@@ -42,12 +37,12 @@ if __name__ == "__main__":
     latmin = 60
 
     if EMARS == True:
-        PATH = 'link-to-anthro/EMARS'
+        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
         files = '/*isentropic*'
         reanalysis = 'EMARS'
     else:
         reanalysis = 'OpenMARS'
-        PATH = 'link-to-anthro/OpenMARS/Isentropic'
+        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
         files = '/*isentropic*'
 
     if SD == True:
@@ -67,7 +62,6 @@ if __name__ == "__main__":
         ax.tick_params(length = 6, labelsize = 18)
 
         ax.set_ylim([-0.01, 1.7])
-        #ax.set_yticks([0,10,20,30,40])
 
         ax2 = ax.twiny()
         ax2.set_xticks(newpos)
@@ -105,12 +99,6 @@ if __name__ == "__main__":
             bbox_inches = 'tight', pad_inches = 0.1)
 
 
-
-
-    
-
-
-
     d = xr.open_mfdataset(PATH+files, decode_times=False, concat_dim='time',
                            combine='nested',chunks={'time':'auto'})
 
@@ -138,7 +126,7 @@ if __name__ == "__main__":
         di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
         if EMARS == True:
             di = di.sortby(di.Ls, ascending=True)
-        Zi = cPV.calc_eddy_enstr(di.PV) * 10**6
+        Zi = funcs.calc_eddy_enstr(di.PV) * 10**6
 
         
         Ls = di.Ls
@@ -147,10 +135,6 @@ if __name__ == "__main__":
         Zi = Zi.rolling(time=smooth,center=True)
 
         Zi = Zi.mean()
-
-
-
-        
         
         if i < 28:
             ax = axs[0]
@@ -176,11 +160,6 @@ if __name__ == "__main__":
     
     axs[0].legend(fontsize = 15, loc = 'upper center')
     axs[1].legend(fontsize = 15, loc = 'upper center')
-
-  
-    
-
-
 
     plt.savefig('Thesis/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
