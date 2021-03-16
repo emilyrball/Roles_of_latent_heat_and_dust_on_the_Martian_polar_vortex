@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 
 from cartopy import crs as ccrs
@@ -19,47 +19,7 @@ from scipy.interpolate import interp2d
 
 import pandas as pd
 import string
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-def make_colourmap(vmin, vmax, step, **kwargs):
-    '''
-    Makes a colormap from ``vmin`` (inclusive) to ``vmax`` (exclusive) with
-    boundaries incremented by ``step``. Optionally includes choice of color and
-    to extend the colormap.
-    '''
-    col = kwargs.pop('col', 'viridis')
-    extend = kwargs.pop('extend', 'both')
-
-    boundaries = list(np.arange(vmin, vmax, step))
-
-    if extend == 'both':
-        cmap_new = cm.get_cmap(col, len(boundaries) + 1)
-        colours = list(cmap_new(np.arange(len(boundaries) + 1)))
-        cmap = colors.ListedColormap(colours[1:-1],"")
-        cmap.set_over(colours[-1])
-        cmap.set_under(colours[0])
-
-    elif extend == 'max':
-        cmap_new = cm.get_cmap(col, len(boundaries))
-        colours = list(cmap_new(np.arange(len(boundaries))))
-        cmap = colors.ListedColormap(colours[:-1],"")
-        cmap.set_over(colours[-1])
-    
-    elif extend == 'min':
-        cmap_new = cm.get_cmap(col, len(boundaries))
-        colours = list(cmap_new(np.arange(len(boundaries))))
-        cmap = colors.ListedColormap(colours[1:],"")
-        cmap.set_under(colours[0])
-
-    norm = colors.BoundaryNorm(boundaries, ncolors = len(boundaries) - 1,
-                               clip = False)
-
-    return boundaries, cmap_new, colours, cmap, norm
 
 def newfmt(x):
     _, b = '{:.2e}'.format(x).split('e')
@@ -122,8 +82,6 @@ if __name__ == "__main__":
         fmt = r'%r \%'
     else:
         fmt = '%r'
-
-    
 
     newlabel = ['Northern\nsummer solstice', 'Northern\nwinter solstice']
     newpos = [90,270]
@@ -224,9 +182,6 @@ if __name__ == "__main__":
     plt.savefig('Thesis/dust_distributions.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
         
-
-
-
     plt.subplots_adjust(wspace = 0.2)
 
     boundaries0 = [2e-7, 5e-7, 8e-7, 1.1e-6, 1.4e-6, 1.7e-6]
@@ -325,7 +280,7 @@ if __name__ == "__main__":
              200, 175, 150, 125, 100, 75, 50, 40, 30, 20, 10, 5, 1]
 
 
-    tau = xr.open_dataset('link-to-anthro/dust_dists/dust_clim.nc',
+    tau = xr.open_dataset('/export/anthropocene/array-01/xz19136/dust_dists/dust_clim.nc',
                                                 decode_times=False)
     tau = tau.mean(dim='longitude')
     tau = tau.squeeze()
@@ -370,7 +325,7 @@ if __name__ == "__main__":
         start = start_file[i]
         end = end_file[i]
 
-        _ ,_ , i_files = filestrings(exp[i], filepath, start,
+        _ ,_ , i_files = funcs.filestrings(exp[i], filepath, start,
                                         end, interp_file)
 
         d_isca = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
@@ -386,7 +341,7 @@ if __name__ == "__main__":
         d["mars_solar_long"] = d.mars_solar_long.squeeze()
         d = d.where(d.mars_solar_long != 354.3762, other=359.762)
 
-        x, index = assign_MY(d)
+        x, index = funcs.assign_MY(d)
 
         
         
@@ -396,11 +351,11 @@ if __name__ == "__main__":
         
         ens = x.dt_tg_lh_condensation.where(x.dt_tg_lh_condensation != np.nan, other = 0.0)
         
-        dsr, N, n = make_coord_MY(x, index)
+        dsr, N, n = funcs.make_coord_MY(x, index)
         dsr = dsr.chunk({"new_time":"auto"})
         dsr = dsr.rolling(new_time=5,center=True)
         dsr = dsr.mean(skipna=True)
-        x = dsr.dt_tg_lh_condensation.mean(dim="MY") * 25
+        x = dsr.dt_tg_lh_condensation.mean(dim="MY")
         
         Ls = dsr.mars_solar_long.mean(dim="MY")
         xp = x.sel(plev=2.0, method='nearest').squeeze()
