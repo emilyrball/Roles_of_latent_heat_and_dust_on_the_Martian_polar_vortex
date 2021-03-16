@@ -7,7 +7,7 @@ from multiprocessing import Pool, cpu_count
 import numpy as np
 import xarray as xr
 import os, sys
-import PVmodule_Emily as PV
+import PVmodule as PV
 
 def netcdf_prep(ds):
     '''
@@ -183,90 +183,11 @@ if __name__ == "__main__":
     omega = 7.08822e-05 # planetary rotation rate
     g = 3.72076 # gravitational acceleration
     rsphere = 3.3962e6 # mean planetary radius
-
-    # Earth-specific!
-    #theta0 = 223.
-    #kappa = 287.04/1004.6
-    #p0 = 101325.
-    #omega=7.2921e-5
-    #rsphere=6.371e6
-    #g=9.81
-
-    # choose your experiment
-    exp = 'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim6.4e-05_lh_rel'
-    filepath = '/export/silurian/array-01/xz19136/Isca_data'
-    start_file = 1
-    end_file = 130
-    freq = 'daily'
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp'
-    outpath1 = '/export/silurian/array-01/xz19136/Isca_data'
-    runs, out, i_files = filestrings(exp, filepath, start_file,
-                                     end_file, interp_file, outpath=outpath1)
-
+    
+    # change calculate_PV_all to make sure calculating PV for correct experiment
     
     with Pool(processes = 4) as pool:
 
-        pool.map(calculate_PV_all, range(180,223))
+        pool.map(calculate_PV_all, range(1,223))
     print("Done.")
 
-    #for i in range(len(i_files)):
-    #    f = i_files[i]
-    #    run = runs[i]
-    #    outpath = out[i]
-#
-    #    exists = os.path.isfile(outpath+'_PV.nc')
-    #    if not exists:        
-    #        ds = xr.open_mfdataset(f+'.nc', decode_times=False,
-    #                               concat_dim='time', combine='nested',
-    #                               chunks={'time':'auto'})
-#
-    #        d = netcdf_prep(ds)
-#
-    #        Ls = get_ls(d)
-#
-    #        print('Calculating potential temperature...')
-    #        theta = PV.potential_temperature(d.pfull, d.temp,
-    #                                         kappa = kappa, p0 = p0)
-#
-    #        uwnd_trans,vwnd_trans,tmp_trans = wind_prep(d)
-#
-    #        print('Calculating potential vorticity...')
-    #        PV_iso = PV.potential_vorticity_baroclinic(uwnd_trans, vwnd_trans,
-    #                  theta, 'pfull', omega = omega, g = g, rsphere = rsphere)
-#
-    #        PV_iso = PV_iso.transpose('time','pfull','lat','lon')
-    #        d["PV"] = PV_iso
-#
-    #        d = save_PV_isobaric(d, outpath)
-#
-    #        d = d.squeeze()
-    #        d = d.transpose('time','pfull','lat','lon')
-#
-    #        # define isentropic levels to interpolate data to
-    #        thetalevs = [200., 225., 250., 275., 300., 310., 320., 330., 340.,
-    #                     350., 360., 370., 380., 390., 400., 425., 450., 475.,
-    #                     500., 525., 550., 575., 600., 625., 650., 675., 700.,
-    #                     725., 750., 775., 800., 850., 900., 950.]
-    #        isentlevs = np.array(thetalevs)
-#
-#
-    #        isent_prs, isent_PV, isent_u = PV.isent_interp(isentlevs, d.pfull,
-    #                                           d.temp, d.PV, d.ucomp, axis = 1)
-#
-    #        d_isent = xr.Dataset({
-    #            "prs" : (("time","ilev","lat","lon"), isent_prs),
-    #            "PV"    : (("time","ilev","lat","lon"), isent_PV),
-    #            "uwnd"  : (("time","ilev","lat","lon"), isent_u)
-    #            },
-    #            coords = {
-    #                "ilev": isentlevs,
-    #                "time": d.time,
-    #                "lat" : d.lat,
-    #                "lon" : d.lon
-    #                })
-#
-    #        d_isent["mars_solar_long"] = d.mars_solar_long
-    #        d_isent.to_netcdf(outpath+'_isentropic.nc')
-#
-    #    else:
-    #         print("Skipping "+run)
