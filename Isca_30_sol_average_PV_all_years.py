@@ -3,7 +3,7 @@ import xarray as xr
 import os, sys
 import pandas as pd
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -14,13 +14,6 @@ from matplotlib import (cm, colors)
 import matplotlib.path as mpath
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-from Isca_instantaneous_PV_all import (stereo_plot, make_stereo_plot,
-                                       make_colourmap)
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import assign_MY
 
 def make_coord_MY(x, index):
     x = x.where(x.time > index[0], drop=True)
@@ -38,8 +31,8 @@ def make_coord_MY(x, index):
     return dsr, N, n
 
 if __name__ == "__main__":
-    Lsmin = 265
-    Lsmax = 275
+    Lsmin = 255
+    Lsmax = 285
 
     theta0 = 200.
     kappa = 1/4.0
@@ -61,7 +54,7 @@ if __name__ == "__main__":
 
     #filepath = '/export/triassic/array-01/xz19136/Isca_data'
     start_file=[30, 30, 30, 30, 30, 30, 30, 30]
-    end_file = [80, 99, 88, 99, 96, 99, 99, 88]
+    end_file = [88, 99, 88, 99, 96, 99, 99, 88]
 
 
     figpath = 'Thesis/'
@@ -72,7 +65,7 @@ if __name__ == "__main__":
     ilev = 350.
 
 
-    theta, center, radius, verts, circle = stereo_plot()
+    theta, center, radius, verts, circle = funcs.stereo_plot()
 
     vmin = 10
     vmax = 101
@@ -81,7 +74,7 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(nrows=2,ncols=4, figsize = (14,8),
                             subplot_kw = {'projection':ccrs.NorthPolarStereo()})
 
-    boundaries, _, _, cmap, norm = make_colourmap(vmin, vmax, step,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(vmin, vmax, step,
                                                 col = 'viridis', extend = 'both')
 
     if plt.rcParams["text.usetex"]:
@@ -96,7 +89,7 @@ if __name__ == "__main__":
         start = start_file[i]
         end = end_file[i]
 
-        _, _, i_files = filestrings(exp[i], filepath, start, end, interp_file)
+        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
 
         d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
                             combine='nested')
@@ -128,7 +121,7 @@ if __name__ == "__main__":
         # Lait scale PV
         theta = x.ilev
         print("Scaling PV")
-        laitPV = cPV.lait(x.PV,theta,theta0,kappa=kappa)
+        laitPV = funcs.lait(x.PV,theta,theta0,kappa=kappa)
         x["scaled_PV"]=laitPV
 
 
@@ -146,7 +139,7 @@ if __name__ == "__main__":
                 else:
                     my = j + 25
 
-                make_stereo_plot(ax, [latm, 80, 70, 60, 50],
+                funcs.make_stereo_plot(ax, [latm, 80, 70, 60, 50],
                                       [-180, -120, -60, 0, 60, 120, 180],
                                       circle, alpha = 0.3, linestyle = '--',)
 
@@ -178,7 +171,6 @@ if __name__ == "__main__":
     cb.set_label(label='Lait-scaled PV (10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
                  fontsize=20)
     cb.ax.tick_params(labelsize=15)
-
 
 
     plt.savefig(figpath+'/Isca_average_winter_PV_'+str(ilev)+'K_'+str(Lsmin)+'-'+str(Lsmax)+'_all_years_7.4e-05.pdf',
