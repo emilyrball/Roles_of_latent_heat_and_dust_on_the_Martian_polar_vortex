@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -15,9 +15,6 @@ from matplotlib import (cm, colors)
 import matplotlib.path as mpath
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-from Isca_instantaneous_PV_all import (stereo_plot, make_stereo_plot,
-                                       make_colourmap)
 
 def calc_jet_lat(u, lats, plot=False):
     """Function to calculate location and strenth of maximum given zonal wind
@@ -67,9 +64,7 @@ if __name__ == "__main__":
         proj = ccrs.NorthPolarStereo()
 
 
-
-    #inpath = '/export/anthropocene/array-01/dm16883/Reanalysis/Mars/MACDA'
-    PATH = 'link-to-anthro/OpenMARS/Isentropic'
+    PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
     infiles = '/isentropic*'
 
     figpath = 'OpenMARS_figs/'
@@ -92,7 +87,7 @@ if __name__ == "__main__":
         latm = d.lat.max().values
         x = d.sel(lat=d.lat[latmin<d.lat])
 
-    theta, center, radius, verts, circle = stereo_plot()
+    theta, center, radius, verts, circle = funcs.stereo_plot()
 
 
     fig, axs = plt.subplots(nrows=2,ncols=4, figsize = (14,8),
@@ -104,7 +99,7 @@ if __name__ == "__main__":
     vmax = 101
     step = 10
 
-    boundaries0, _, _, cmap0, norm0 = make_colourmap(vmin, vmax, step,
+    boundaries0, _, _, cmap0, norm0 = funcs.make_colourmap(vmin, vmax, step,
                                                 col = 'viridis', extend = 'both')
 
 
@@ -117,7 +112,7 @@ if __name__ == "__main__":
 
     # Lait scale PV
     theta = x.ilev
-    laitPV = cPV.lait(x.PV,theta,theta0,kappa=kappa)
+    laitPV = funcs.lait(x.PV,theta,theta0,kappa=kappa)
     x["scaled_PV"]=laitPV
 
     for i, ax in enumerate(fig.axes):
@@ -128,12 +123,12 @@ if __name__ == "__main__":
             my = i + 25
 
         if sh == True:
-            make_stereo_plot(ax, [-50, -60, -70, -80, latm],
+            funcs.make_stereo_plot(ax, [-50, -60, -70, -80, latm],
                               [-180, -120, -60, 0, 60, 120, 180],
                                       circle, alpha = 0.3, linestyle = '--',)
             #x["scaled_PV"] = - x.scaled_PV
         else:
-            make_stereo_plot(ax, [latm, 80, 70, 60, 50],
+            funcs.make_stereo_plot(ax, [latm, 80, 70, 60, 50],
                               [-180, -120, -60, 0, 60, 120, 180],
                               circle, alpha = 0.3, linestyle = '--',)
 

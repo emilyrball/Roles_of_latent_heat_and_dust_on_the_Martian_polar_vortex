@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -18,13 +18,6 @@ import matplotlib
 import pandas as pd
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-
-from dust_distribution import create_dust
 
 def data_reduct(d, Lsmin, Lsmax, latmin, latmax):
     d = d.astype('float32')
@@ -154,58 +147,6 @@ if __name__ == "__main__":
         'Lait-scaled PV\n(10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
     ]
 
-
-    #pfulls = [625, 610, 600, 590, 580, 570, 560, 550, 530, 510, 490, 
-    #         470, 450, 425, 400, 375, 350, 325, 300, 275, 250, 225, 
-    #         200, 175, 150, 125, 100, 75, 50, 40, 30, 20, 10, 5, 1]
-
-
-    #tau_clim = xr.open_dataset('/export/anthropocene/array-01/xz19136/' \
-    #                      + 'dust_dists/dust_clim.nc', decode_times = False)
-    #tau_clim = tau_clim.mean(dim='longitude')
-    #tau_clim = tau_clim.squeeze()
-
-    #ls_clim = tau_clim.Ls
-    #phi_clim = tau_clim.latitude
-
-    #q0_clim, _ = create_dust(pfulls, phi_clim, ls_clim, tau_clim)
-
-    #q0_clim = xr.DataArray(data = q0_clim, dims = ["latitude", "Time"],
-    #                coords = dict(latitude = (["latitude"], phi_clim),
-    #                              Time = (["Time"], tau_clim.Time)),
-    #                attrs = dict(description="Surface dust mmr",
-    #                                     units="kg/kg"))
-
-    #tau_MY28 = xr.open_dataset('/export/anthropocene/array-01/xz19136/dust_' \
-    #                 + 'dists/dustscenario_MY28_v2-0.nc', decode_times = False)
-    #tau_MY28 = tau_MY28.mean(dim='longitude')
-    #tau_MY28["cdod"] = tau_MY28.cdod610
-    #tau_MY28 = tau_MY28[["cdod", "Ls"]]
-    #tau_MY28 = tau_MY28.squeeze()
-    #print(tau_MY28)
-
-
-    #ls_MY28 = tau_MY28.Ls
-    #phi_MY28 = tau_MY28.latitude
-
-    #q0_MY28, _ = create_dust(pfulls, phi_MY28, ls_MY28, tau_MY28)
-
-    #q0_MY28 = xr.DataArray(data = q0_MY28, dims = ["latitude", "Time"],
-    #                coords = dict(latitude = (["latitude"], phi_MY28),
-    #                              Time = (["Time"], tau_MY28.Time)),
-    #                attrs = dict(description="Surface dust mmr",
-    #                                     units="kg/kg"))
-
-    #if sh:
-    #    q0_clim = q0_clim.where(q0_clim.latitude <= 0, drop = True)
-    #    q0_MY28 = q0_MY28.where(q0_MY28.latitude <= 0, drop = True)
-    #else: 
-    #    q0_clim = q0_clim.where(q0_clim.latitude >= 0, drop = True)
-    #    q0_MY28 = q0_MY28.where(q0_MY28.latitude >= 0, drop = True)
-
-    #q0_clim = q0_clim.mean(dim = "latitude", skipna = True)
-    #q0_MY28 = q0_MY28.mean(dim = "latitude", skipna = True)
-
     fig, axs = plt.subplots(3,1,figsize=(10,14))
 
     for i, ax in enumerate(fig.axes):
@@ -219,14 +160,7 @@ if __name__ == "__main__":
         
         ax3.yaxis.set_label_position('right')
         ax3.yaxis.set_ticks_position('right')
-        #ax3.set_ylabel('surface dust mmr (kg/kg)', fontsize = 18,
-        #                color = red)
-
-        #ax3.plot(ls_clim, q0_clim, color = red,
-        #         linewidth = '1.0', linestyle = '--')
-        #ax3.plot(ls_MY28, q0_MY28, color = red,
-        #         linewidth = '1.0', linestyle = '-')
-        #ax3.set_yticklabels(["{:.1e}".format(i) for i in ax3.get_yticks()])
+        
         ax3.set_ylim([-0.05,1])
         ax3.set_yticks([])
         ax3.set_yticklabels([])
@@ -252,12 +186,12 @@ if __name__ == "__main__":
         fig.savefig(figpath+'variability_all_'+hem+'_'+str(ilev)+'K.pdf',
                     bbox_inches='tight', pad_inches = 0.1)
 
-        _, _, i_files = filestrings(exp[i], filepath, start, end, interp_file)
+        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
 
         d = xr.open_mfdataset(i_files, decode_times = False,
                               concat_dim = 'time', combine='nested')
 
-        _, _, p_files = filestrings(exp[i], filepath, start, end, p_file)
+        _, _, p_files = funcs.filestrings(exp[i], filepath, start, end, p_file)
 
         dp = xr.open_mfdataset(p_files, decode_times = False,
                               concat_dim = 'time', combine='nested')
@@ -278,12 +212,12 @@ if __name__ == "__main__":
         # Lait scale PV
         theta = d.ilev
         print("Scaling PV")
-        laitPV = cPV.lait(d.PV, theta, theta0, kappa = kappa)
+        laitPV = funcs.lait(d.PV, theta, theta0, kappa = kappa)
         d["scaled_PV"] = laitPV
 
 
-        x, index = assign_MY(d)
-        dsr, N, n = make_coord_MY(x, index)
+        x, index = funcs.assign_MY(d)
+        dsr, N, n = funcs.make_coord_MY(x, index)
 
         Ls = dsr.mars_solar_long.mean(dim = 'MY')
         year_mean = dsr.mean(dim = 'MY')
@@ -344,8 +278,8 @@ if __name__ == "__main__":
 
         
         
-        x, index = assign_MY(dp)
-        dsr, N, n = make_coord_MY(x, index)
+        x, index = funcs.assign_MY(dp)
+        dsr, N, n = funcs.make_coord_MY(x, index)
 
         Ls = dsr.mars_solar_long.mean(dim = 'MY')
         year_mean = dsr.mean(dim = 'MY')

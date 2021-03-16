@@ -1,5 +1,5 @@
 '''
-Calculate streamfunction psi from dsr
+Script to plot the MMC for Isca data
 '''
 
 import numpy as np
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     exp = [
         #'soc_mars_mk36_per_value70.85_none_mld_2.0',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_lh_rel',
-        #'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
+        'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05_lh_rel',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
@@ -84,84 +84,142 @@ if __name__ == "__main__":
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY30_7.4e-05_lh_rel',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY31_7.4e-05_lh_rel',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY32_7.4e-05_lh_rel',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years',
+        #'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years',
         #'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
     ]
+    name = [
+        #'stand_',
+        #'lh_',
+        'scenario_',
+        #'scenario_lh_',
+        #'topo_',
+        #'topo_lh_',
+        #'topo_scenario_',
+        #'topo_scenario_lh_',
+
+    ]
+
     location = [
         #'triassic',
         #'triassic',
-        #'anthropocene',
-        #'anthropocene',
-        #'triassic',
-        #'triassic',
-        #'anthropocene',
-        #'silurian'
-        #'silurian',
-        #'silurian',
-        #'silurian',
-        #'silurian',
-        #'silurian',
-        #'silurian', 
-        #'silurian', 
-        #'silurian', 
-        #'silurian',
         'anthropocene',
+        #'anthropocene',
+        #'triassic',
+        #'triassic',
+        #'anthropocene',
+        #'silurian',
+        #'silurian',
+        #'silurian',
+        #'silurian',
+        #'silurian',
+        #'silurian',
+        #'silurian', 
+        #'silurian', 
+        #'silurian', 
+        #'silurian',
+        #'anthropocene',
         #'triassic',
     ]
-    
+    start_file = [
+        #33, 
+        #33, 
+        33, 
+        #33, 
+        #33, 
+        #33, 
+        #33, 
+        #33,
+        #33, 
+        #33,
+        #33, 
+        #33, 
+        #33, 
+        #33, 
+        #33, 
+        #33, 
+        #33,
+        #21,
+        #25,
+    ]
+    end_file = [
+        #99,
+        #99, 
+        99, 
+        #99,
+        #99, 
+        #99, 
+        #99, 
+        #139
+        #80, 
+        #99, 
+        #88, 
+        #99, 
+        #222, 
+        #96, 
+        #99, 
+        #99, 
+        #88,
+        #222,
+        #99,
+    ]
 
-    for i in range(len(exp)):
+    freq = 'daily'
+
+    p_file = 'atmos_'+freq+'_interp_new_height_temp_PV.nc'
+
+    for i in range(len(start_file)):
         print(exp[i])
 
         filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
         figpath = 'Isca_figs/'+exp[i]+'/'
+        start = start_file[i]
+        end = end_file[i]
+
+        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, p_file)
+
+        d = xr.open_mfdataset(i_files, decode_times = False,
+                              concat_dim = 'time', combine='nested')
+
+
+        ##### reduce dataset #####
+        d = d.astype('float32')
+        d = d.sortby('time', ascending = True)
+        d = d.sortby('lat', ascending = False)
+        d = d.sortby('pfull', ascending = True)
+        d = d.where(d.mars_solar_long != 354.3762, other=359.762)
+        d = d.where(d.mars_solar_long != 354.37808, other = 359.762)
+        d = d.where(d.mars_solar_long <= Lsmax, drop=True)
+        d = d.where(Lsmin <= d.mars_solar_long, drop=True)
+        d = d.mean(dim = 'lon', skipna = True).squeeze()
+        d["pfull"] = d.pfull*100
         
-        for year in [6]:
-            d = xr.open_mfdataset(filepath+'/'+exp[i]+'/MY'+str(year)+'*dsr.nc',
-                                  decode_times = False,
-                                  concat_dim = 'time', combine='nested')
 
+        if sh == False:
+            d = d.where(d.lat > 0, drop = True).squeeze()
+        else:
+            d = d.where(d.lat < 0, drop = True).squeeze()
 
-            ##### reduce dataset #####
-            d = d.astype('float32')
-            d = d.sortby('new_time', ascending = True)
-            d = d.sortby('lat', ascending = False)
-            d = d.sortby('pfull', ascending = True)        
+        plev = d.pfull.sel(pfull = plev, method = "nearest").values
+        
+        d["mars_solar_long"] = d.mars_solar_long.sel(lat=5,method="nearest")
 
-            plev = d.pfull.sel(pfull = plev, method = "nearest").values
+        x, index = funcs.assign_MY(d)
+        dsr, N, n = funcs.make_coord_MY(x, index)
 
-            ls = d.mars_solar_long.squeeze()
-            u = d.ucomp.squeeze()
-            v = d.vcomp.squeeze()
-            lat = d.lat
-            pfull = d.pfull
+        if exp[i] == 'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years':
+            for j in range(len(n)):
+                dsrj = dsr.sel(MY = dsr.MY[j], method = "nearest").squeeze()
+                dsrj.to_netcdf(filepath + '/' + exp[i] + '/MY' + str(j) + '_' \
+                     + str(Lsmin) + '-' \
+                        + str(Lsmax) + '_dsr.nc')
+                print(str(j))
+            print("Done")
+            continue
 
-            lat_max = []
-            mag_max = []
+        else:
+            dsr = dsr.mean(dim = "MY")
+            dsr.to_netcdf('/export/silurian/array-01/xz19136/Isca_data/' \
+                + 'Streamfn/' + name[i] + str(Lsmin) + '-' + str(Lsmax) \
+                + '_dsr.nc')
 
-            pfull_max = []
-            psi_lat = []
-            psi_check = []
-            psi_i = []
-
-
-            for j in range(ls.shape[0]):
-                lsj = ls[j]
-                vj = v.where(ls == lsj, drop = True).squeeze()
-                psi_j = funcs.calc_streamfn(lat.load(), pfull.load(), vj.load(),
-                                       radius = rsphere, g = g)
-
-                psi_j = xr.DataArray(data = psi_j, dims = ["pfull", "lat"],
-                                coords = dict(pfull = (["pfull"], pfull.values),
-                                              lat   = (["lat"],   lat.values)),
-                                attrs = dict(description="Meridional streamfunction",
-                                             units="kg/s"))
-                psi_j = psi_j.assign_coords({'time':lsj.values})
-                psi_j = psi_j.rename("psi")
-                psi_i.append(psi_j)
-
-            psi = xr.concat(psi_i, dim='time')
-            psi.to_netcdf(filepath + '/' + exp[i] + '/MY'+str(year)+'_' + str(Lsmin) + '-' \
-                            + str(Lsmax) + '_psi.nc')
-
-            print('Saved.')
+            print('dsr saved.')

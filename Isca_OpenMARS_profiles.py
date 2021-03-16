@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import PVmodule_Emily as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -11,9 +11,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import (cm, colors)
 import matplotlib.path as mpath
-
-from Isca_instantaneous_PV_all import make_colourmap
-from calculate_PV_Isca_anthro import filestrings
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
@@ -99,11 +96,11 @@ if __name__ == "__main__":
 
 
 
-    boundaries0, _, _, cmap0, norm0 = make_colourmap(110, 251, 10,
+    boundaries0, _, _, cmap0, norm0 = funcs.make_colourmap(110, 251, 10,
                                         col = 'cet_coolwarm', extend = 'both')
-    boundaries1, _, _, cmap1, norm1 = make_colourmap(-150, 151, 25,
+    boundaries1, _, _, cmap1, norm1 = funcs.make_colourmap(-150, 151, 25,
                                         col = 'cet_coolwarm', extend = 'both')
-    boundaries, _, _, cmap, norm = make_colourmap(-5, 66, 5,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(-5, 66, 5,
                                         col = 'OrRd', extend = 'max')
 
     if plt.rcParams["text.usetex"]:
@@ -252,7 +249,7 @@ if __name__ == "__main__":
     u1 = ds.uwnd.mean(dim='time').mean(dim='lon')
     theta1 = ds.theta.mean(dim='time').mean(dim='lon')
 
-    lait1 = cPV.laitscale(ds.PV, ds.theta, theta0, kappa=kappa)
+    lait1 = funcs.lait(ds.PV, ds.theta, theta0, kappa=kappa)
     lait1 = lait1.mean(dim='time').mean(dim='lon')*10**5
 
     p = ds.plev
@@ -306,7 +303,7 @@ if __name__ == "__main__":
         start = start_file[i]
         end = end_file[i]
     
-        _, _, i_files = filestrings(exp[i], filepath, start, end, interp_file)
+        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
         
 
         d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
@@ -328,9 +325,9 @@ if __name__ == "__main__":
         d = d.where(d.mars_solar_long >= 255., drop = True)
 
 
-        theta = cPV.potential_temperature(d.pfull*100, d.temp, p0=p0, kappa=kappa)
+        theta = funcs.calculate_theta(d.temp, d.pfull*100, p0=p0, kappa=kappa)
 
-        lait = cPV.laitscale(d.PV, theta, theta0, kappa=kappa)*10**5
+        lait = funcs.lait(d.PV, theta, theta0, kappa=kappa)*10**5
 
         lait = lait.mean(dim='time').mean(dim='lon').squeeze()
 

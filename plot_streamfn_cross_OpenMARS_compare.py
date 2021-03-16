@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -21,19 +21,8 @@ import pandas as pd
 
 import colorcet as cc
 import string
-from Isca_instantaneous_PV_all import make_colourmap
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-#from calculate_PV_Isca_anthro import filestrings
-#from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-
-def moving_average(x, w):
-    return np.convolve(x, np.ones(w), 'valid') / w
-
-class nf(float):
-    def __repr__(self):
-        s = f'{self:.1f}'
-        return f'{self:.0f}' if s[-1] == '0' else s
 
 if __name__ == "__main__":
 
@@ -94,7 +83,7 @@ if __name__ == "__main__":
     plt.subplots_adjust(hspace=.2,wspace=.09)
 
 
-    boundaries, _, _, cmap, norm = make_colourmap(vmin, vmax, step,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(vmin, vmax, step,
                                         col = 'cet_CET_L12', extend = 'both')
 
     
@@ -114,7 +103,7 @@ if __name__ == "__main__":
         PATH = '/export/anthropocene/array-01/xz19136/Isca_data/' \
             + 'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years'
     else:
-        PATH = 'link-to-anthro/OpenMARS/Streamfn'
+        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Streamfn'
     
     
     years = []
@@ -153,7 +142,7 @@ if __name__ == "__main__":
                     levels = boundaries[slice(None,None,2)], colors='black',
                     linewidths=0.6)
     
-    c0.levels = [nf(val) for val in c0.levels]
+    c0.levels = [funcs.nf(val) for val in c0.levels]
     axs[0].clabel(c0, c0.levels, inline=1, fmt=fmt, fontsize=14)
 
     axs[1].contourf(d.lat, d.pfull, d.transpose('pfull','lat'),
@@ -162,7 +151,7 @@ if __name__ == "__main__":
                     levels = boundaries[slice(None,None,2)], colors='black',
                     linewidths=0.6)
     
-    c1.levels = [nf(val) for val in c1.levels]
+    c1.levels = [funcs.nf(val) for val in c1.levels]
     axs[1].clabel(c1, c1.levels, inline=1, fmt=fmt, fontsize=14)
 
     fig.savefig(figpath+'compareTESMCS_MY_psi_cross-section_Ls' + str(Lsmin) + '-' \

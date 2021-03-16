@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 import os, sys
 
-import calculate_PV as cPV
+import analysis_functions as funcs
 import colorcet as cc
 import string
 
@@ -20,11 +20,6 @@ import matplotlib
 import pandas as pd
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-
-from calculate_PV_Isca_anthro import filestrings
-
-from eddy_enstrophy_Isca_all_years import (assign_MY, make_coord_MY)
-
 
 if __name__ == "__main__":
 
@@ -42,12 +37,12 @@ if __name__ == "__main__":
     latmin = 60
 
     if EMARS == True:
-        PATH = 'link-to-anthro/EMARS'
+        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
         files = '/*isentropic*'
         reanalysis = 'EMARS'
     else:
         reanalysis = 'OpenMARS'
-        PATH = 'link-to-anthro/OpenMARS/Isentropic'
+        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
         files = '/*isentropic*'
 
     if SD == True:
@@ -156,7 +151,7 @@ if __name__ == "__main__":
         start = start_file[i]
         end = end_file[i]
 
-        _, _, i_files = filestrings(exp[i], filepath, start, end, interp_file)
+        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
 
         d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
                             combine='nested')
@@ -172,7 +167,7 @@ if __name__ == "__main__":
         d = d.where(d.mars_solar_long != 354.3762, other=359.762)
         d = d.where(d.mars_solar_long != 354.37808, other = 359.7808)
 
-        d, index = assign_MY(d)
+        d, index = funcs.assign_MY(d)
 
         x = d.sel(ilev=ilev, method='nearest').squeeze()
 
@@ -182,12 +177,12 @@ if __name__ == "__main__":
         print('Averaged over '+str(np.max(x.MY.values))+' MY')
 
         x = x.transpose("lat","lon","time")
-        ens = cPV.calc_eddy_enstr(x.PV) * 10**6 * 2
+        ens = funcs.calc_eddy_enstr(x.PV) * 10**6
 
 
         x["ens"] = ens
 
-        dsr, N, n = make_coord_MY(x, index)
+        dsr, N, n = funcs.make_coord_MY(x, index)
 
         year_mean = dsr.mean(dim='MY')
         
@@ -259,7 +254,7 @@ if __name__ == "__main__":
         di = di.transpose("lat","lon","time")
         di = di.sortby("lat", ascending = True)
         di = di.sortby("lon", ascending = True)
-        Zi = cPV.calc_eddy_enstr(di.PV) * 10**6
+        Zi = funcs.calc_eddy_enstr(di.PV) * 10**6
         reanalysis_clim.append(Zi)
         
         Ls = di.Ls
@@ -360,7 +355,7 @@ if __name__ == "__main__":
         start = start_file[i]
         end = end_file[i]
 
-        _ ,_ , i_files = filestrings(exp[i], filepath, start,
+        _ ,_ , i_files = funcs.filestrings(exp[i], filepath, start,
                                         end, interp_file)
 
         d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
@@ -377,7 +372,7 @@ if __name__ == "__main__":
         d = d.where(d.mars_solar_long != 354.3762, other=359.762)
         print(d.mars_solar_long[0].values)
 
-        d, index = assign_MY(d)
+        d, index = funcs.assign_MY(d)
 
         x = d.sel(ilev=ilev, method='nearest').squeeze()
 
@@ -387,11 +382,11 @@ if __name__ == "__main__":
         print('Averaged over '+str(np.max(x.MY.values))+' MY')
 
         x = x.transpose("lat","lon","time")
-        ens = cPV.calc_eddy_enstr(x.PV) * 10**6 * 2
+        ens = funcs.calc_eddy_enstr(x.PV) * 10**6
 
         x["ens"] = ens
 
-        dsr, N, n = make_coord_MY(x, index)
+        dsr, N, n = funcs.make_coord_MY(x, index)
         year_mean = dsr.mean(dim='MY')
         Ls = year_mean.mars_solar_long[0,:]
         year_mean = year_mean.ens.chunk({'new_time':'auto'})
@@ -421,9 +416,5 @@ if __name__ == "__main__":
     axs[0,1].legend(fontsize = 15, loc = 'upper center')
     axs[1,1].legend(fontsize = 15, loc = 'upper center')
 
-
-
     plt.savefig('Thesis/eddy_enstrophy_all_'+str(ilev)+'K_'+reanalysis+sd+'.pdf',
                 bbox_inches='tight',pad_inches=0.1)
-
-
