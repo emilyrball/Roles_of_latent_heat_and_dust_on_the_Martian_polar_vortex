@@ -1,6 +1,9 @@
 ## The roles of latent heating and dust in the structure and variability of the northern Martian polar vortex
 ### analysis of temperature, winds, PV, overturning streamfunction and latent heat release
 Used for analysis in the paper "The roles of latent heating and dust in the structure and variability of the northern Martian polar vortex"
+
+[![DOI](https://zenodo.org/badge/348445677.svg)](https://zenodo.org/badge/latestdoi/348445677)
+
 ***
 ### Components:
 **[analysis_functions](analysis_functions.py):**
