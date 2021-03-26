@@ -84,16 +84,16 @@ if __name__ == "__main__":
             ax2.set_title(title, weight = "bold", fontsize = 20)
             ax2.set_xticklabels(newlabel,fontsize=18)
             ax.set_xticklabels([])
-            ax.set_ylim([-0.0005, 0.027])
-            ax.set_yticks([0,0.005,0.01,0.015,0.02,0.025])
+            ax.set_ylim([-0.005, 0.55])
+            ax.set_yticks([0,0.1,0.2,0.3,0.4,0.5])
 
         elif i == 1:
             ax.set_yticklabels([])
             ax2.set_title("Model", weight = "bold", fontsize = 20)
             ax2.set_xticklabels(newlabel,fontsize=18)
             ax.set_xticklabels([])
-            ax.set_ylim([-0.0005, 0.027])
-            ax.set_yticks([0,0.005,0.01,0.015,0.02,0.025])
+            ax.set_ylim([-0.005, 0.55])
+            ax.set_yticks([0,0.1,0.2,0.3,0.4,0.5])
 
         elif 1 < i < 4:
             ax2.set_xticklabels([])
@@ -143,7 +143,7 @@ if __name__ == "__main__":
             
             
 
-    boundaries, _, _, cmap, norm = funcs.make_colourmap(0, 0.71, 0.05,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(0, 0.56, 0.05,
                                         col = 'cet_kbc', extend = 'max')
 
     plt.subplots_adjust(hspace=.11, wspace = 0.05)
@@ -220,15 +220,16 @@ if __name__ == "__main__":
         
         coslat = np.cos(np.pi/180 * di.lat)
         tot = sum(np.cos(np.pi/180 * di.lat))
-   
+        tlat = np.tan(np.pi/180 * abs(di.lat[2] - di.lat[1])/2)
+        
 
         Zi = di.tmp.where(di.tmp < tc, other=tc)
 
         Zi = tc - Zi
         
         Zi = Zi * coslat
-        Zi = Zi.mean(dim='lon',skipna=True)#/tot
-        Zi = Zi.sum(dim='lat',skipna = True) / tot
+        Zi = Zi.mean(dim='lon',skipna=True)
+        Zi = Zi.sum(dim='lat',skipna = True) / (2*tlat)
 
         Zi = Zi.chunk({'time':'auto'})
         Zi = Zi.rolling(time=smooth,center=True)
@@ -297,7 +298,7 @@ if __name__ == "__main__":
                     open_std.transpose('lat','time'), colors='0.8',
                     levels = [0.05,0.1],linewidths=0.8)
     
-    c0.levels = [cPV.nf(val) for val in c0.levels]
+    c0.levels = [funcs.nf(val) for val in c0.levels]
     axs[1,0].clabel(c0, c0.levels, inline=1, #fmt=fmt,
                     fontsize=10)
 
@@ -386,11 +387,6 @@ if __name__ == "__main__":
         
         ens = x.dt_tg_lh_condensation.where(x.dt_tg_lh_condensation != np.nan, other = 0.0)
 
-        coslat = np.cos(np.pi/180 * ens.lat)
-        
-        ens = ens * coslat
-        
-
         x["ens"] = ens 
 
         dsr, N, n = funcs.make_coord_MY(x, index)
@@ -402,8 +398,10 @@ if __name__ == "__main__":
 
         year_mean = year_mean.where(year_mean.lat > latmin, drop = True)
         ens = year_mean.ens.mean(dim='lon',skipna=True)
-        tot = sum(np.cos(np.pi/180 * ens.lat))
-        ens = ens.sum(dim='lat',skipna=True) / tot
+        coslat = np.cos(np.pi/180 * ens.lat)
+        ens = ens * coslat
+        tlat = np.tan(np.pi/180 * abs(ens.lat[2] - ens.lat[1])/2)
+        ens = ens.sum(dim='lat',skipna=True) / (2*tlat)
         Ls = year_mean.mars_solar_long[:,0]
         isca_ls.append(Ls)
         year_mean = ens.chunk({'new_time':'auto'})
@@ -476,7 +474,7 @@ if __name__ == "__main__":
     c1_ = axs[2,1].contour(isca_ls[0], year_isca.lat,
                     isca_std.transpose('lat','new_time'), colors='0.8',
                     levels = [0.1], linewidths=0.8)
-    c1_.levels = [cPV.nf(val) for val in c1_.levels]
+    c1_.levels = [funcs.nf(val) for val in c1_.levels]
     axs[2,1].clabel(c1_, c1_.levels, inline=1, fontsize=10)
 
 

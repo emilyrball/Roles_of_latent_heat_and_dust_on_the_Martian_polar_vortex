@@ -222,9 +222,9 @@ if __name__ == "__main__":
         Ls = dsr.mars_solar_long.mean(dim = 'MY')
         year_mean = dsr.mean(dim = 'MY')
         year_mean = year_mean.chunk({'new_time' : 'auto'})
-        year_mean = year_mean.rolling(new_time = 4, center = True)
+        #year_mean = year_mean.rolling(new_time = 4, center = True)
             
-        year_mean = year_mean.mean()
+        #year_mean = year_mean.mean()
         mean_PV = year_mean.scaled_PV * 10**5
         mean_wind = year_mean.uwnd
 
@@ -253,9 +253,9 @@ if __name__ == "__main__":
             di = dsr.where(dsr.MY == j, drop = True).squeeze()
 
             Zi = di.chunk({'new_time' : 'auto'})
-            Zi = Zi.rolling(new_time = 4, center = True)
+            #Zi = Zi.rolling(new_time = 4, center = True)
 
-            Zi = Zi.mean()
+            #Zi = Zi.mean()
 
             Ls = di.mars_solar_long
             labj = ""
@@ -284,9 +284,9 @@ if __name__ == "__main__":
         Ls = dsr.mars_solar_long.mean(dim = 'MY')
         year_mean = dsr.mean(dim = 'MY')
         year_mean = year_mean.chunk({'new_time' : 'auto'})
-        year_mean = year_mean.rolling(new_time = 4, center = True)
+        #year_mean = year_mean.rolling(new_time = 4, center = True)
             
-        year_mean = year_mean.mean()
+        #year_mean = year_mean.mean()
         mean_temp = year_mean.temp
         
         linestyle = '-'
@@ -302,9 +302,9 @@ if __name__ == "__main__":
             di = dsr.where(dsr.MY == j, drop = True).squeeze()
 
             Zi = di.chunk({'new_time' : 'auto'})
-            Zi = Zi.rolling(new_time = 4, center = True)
+            #Zi = Zi.rolling(new_time = 4, center = True)
 
-            Zi = Zi.mean()
+            #Zi = Zi.mean()
 
             Ls = di.mars_solar_long
             labj = ""

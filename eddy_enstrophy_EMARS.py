@@ -61,7 +61,8 @@ if __name__ == "__main__":
         ax.set_xlim([0,360])
         ax.tick_params(length = 6, labelsize = 18)
 
-        ax.set_ylim([-0.01, 1.7])
+        ax.set_ylim([-0.1, 149])
+        ax.set_yticks([0,25,50,75,100,125])
 
         ax2 = ax.twiny()
         ax2.set_xticks(newpos)
@@ -82,7 +83,7 @@ if __name__ == "__main__":
         ax.set_xlabel('solar longitude (degrees)', fontsize = 20)
         
         if i == 0:
-            ax.set_ylabel('eddy enstrophy ($10^{-6}$PVU$^2$)', fontsize = 20)
+            ax.set_ylabel('eddy enstrophy ($10^{6}$PVU$^2$)', fontsize = 20)
         else:
             ax.set_yticklabels([])
 

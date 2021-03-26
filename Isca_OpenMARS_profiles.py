@@ -84,13 +84,13 @@ if __name__ == "__main__":
     inpath = 'link-to-anthro/OpenMARS/Isobaric/'
 
 
-    fig0, axs0 = plt.subplots(nrows=1,ncols=5, figsize = (20,5))
+    fig0, axs0 = plt.subplots(nrows=1,ncols=5, figsize = (20,6))
     #fig0.subplots_adjust(wspace = 0.05)#,hspace=0.01)
     plt.tight_layout()
-    fig1, axs1 = plt.subplots(nrows=1,ncols=5, figsize = (20,5))
+    fig1, axs1 = plt.subplots(nrows=1,ncols=5, figsize = (20,6))
     #fig1.subplots_adjust(wspace = 0.09)#,hspace=0.01)
     plt.tight_layout()
-    fig2, axs2 = plt.subplots(nrows=1,ncols=5, figsize = (20,5))
+    fig2, axs2 = plt.subplots(nrows=1,ncols=5, figsize = (20,6))
     #fig2.subplots_adjust(wspace = 0.02)#,hspace=0.01)
     plt.tight_layout()
 

@@ -72,17 +72,21 @@ if __name__ == "__main__":
     axs[0].set_xticklabels([])
     axs[1].set_xlabel('solar longitude (degrees)', fontsize = 20)
     axs[0].set_ylabel('latitude ($^{\circ}$N)', fontsize = 20)
-    axs[1].set_ylabel('maximum jet strength (ms$^{-1}$)', fontsize = 20)
+    axs[1].set_ylabel('jet strength (ms$^{-1}$)', fontsize = 20)
 
-    plt.subplots_adjust(hspace = 0.1)
+    plt.subplots_adjust(hspace = 0.15)
+    axs[0].set_title('Jet latitude and Hadley cell edge', y = 1.02, size = 20,
+                        weight = 'bold')
+    axs[1].set_title('Jet and Hadley cell strength', y = 1.02, size = 20,
+                        weight = 'bold')
 
     ax2 = axs[1].twinx()
     ax2.tick_params(length = 6, labelsize = 18)
-    ax2.set_ylim([2, 55])
+    #ax2.set_ylim([2, 55])
 
     axs[0].plot(np.linspace(265,310,200),np.full(200, 50), color = 'k',
                  linewidth = '3.5',)
-    ax2.plot(np.linspace(265,310,200),np.full(200,5), color = 'k',
+    ax2.plot(np.linspace(265,310,200),np.full(200,15), color = 'k',
                  linewidth = '3.5',)
     
     ax2.yaxis.set_label_position('right')
@@ -93,6 +97,9 @@ if __name__ == "__main__":
     PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Streamfn'
     
     figpath = 'OpenMARS_figs/Hadley_lats/'
+
+    fig.savefig(figpath+'Hadley_edge_max_jet_lats_'+str(plev)+'Pa_new.pdf',
+                            bbox_inches='tight', pad_inches = 0.1)
     
     ci = []
     cimax = []
@@ -131,11 +138,13 @@ if __name__ == "__main__":
             lsj = ls[j]
             psi_j = d.where(d.time == lsj, drop = True).squeeze()
             psi_j = psi_j.to_array().squeeze()
+            psi_j = psi_j.where(psi_j.pfull < 250, drop = True)
+            psi_max = psi_j.max(skipna = True).values
                      
             
             # edge and strength of Hadley cell
             psi_j = psi_j.sel(pfull = plev, method = "nearest").squeeze()
-            _, psi_max = funcs.calc_jet_lat(psi_j.compute(), psi_j.lat)
+            #_, psi_max = funcs.calc_jet_lat(psi_j.compute(), psi_j.lat)
             psi0_lat, _ = funcs.calc_Hadley_lat(psi_j.load(), psi_j.lat.load())
             psi_lat.append(psi0_lat)
             psi_mag.append(psi_max)
