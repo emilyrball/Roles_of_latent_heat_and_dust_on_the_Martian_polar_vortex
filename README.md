@@ -78,3 +78,7 @@ Other Python libraries:
 - xarray
 - scipy
 - colorcet
+***
+### Other:
+**[environment.yml](environment.yml):**
+Python environment file to create an identical Python environment to the one used for analysis herein.
