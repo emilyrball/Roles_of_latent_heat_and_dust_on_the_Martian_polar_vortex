@@ -16,6 +16,7 @@ import numpy as np
 import xarray as xr
 import dask
 import os, sys
+import pandas as pd
 
 import metpy.interpolate
 from metpy.units import units
@@ -157,11 +158,10 @@ def calc_eddy_enstr(q):
     qp2 = qprime ** 2 * cosi
     qpi = qp2.sum(dim = "lat")
     qp = qpi.sum(dim = "lon")
+
+    sumc = sum(cosi)
     
-    tlat = np.tan(np.pi/180 * (q.lat[2] - q.lat[1])/2)
-    tlon = np.tan(np.pi/180 * (q.lon[2] - q.lon[1])/2)
-    
-    Z = 1/(np.pi)*tlon*tlat*qp
+    Z = 1/(4*np.pi)* qp/sumc
 
     return Z
   
