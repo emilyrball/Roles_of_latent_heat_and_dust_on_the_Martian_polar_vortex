@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
         elif i == 1:
             ax.set_yticklabels([])
-            ax2.set_title("Model", weight = "bold", fontsize = 20)
+            ax2.set_title("Yearly Simulations", weight = "bold", fontsize = 20)
             ax2.set_xticklabels(newlabel,fontsize=18)
             ax.set_xticklabels([])
             ax.set_ylim([-0.005, 0.55])
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             ax.plot((1-d, 1+d), (-d, +d), **kwargs)
 
         elif i == 4:
-            ax.set_ylabel('latitude (degrees)', fontsize = 20)
+            ax.set_ylabel('latitude ($^\circ$N)', fontsize = 20)
             ax.yaxis.set_label_coords(x = -0.15, y = 1)
             ax.set_ylim([-90,-50])
             ax.set_yticks([-80,-70,-60])
@@ -143,7 +143,7 @@ if __name__ == "__main__":
             
             
 
-    boundaries, _, _, cmap, norm = funcs.make_colourmap(0, 0.56, 0.05,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(0, 0.51, 0.05,
                                         col = 'cet_kbc', extend = 'max')
 
     plt.subplots_adjust(hspace=.11, wspace = 0.05)

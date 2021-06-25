@@ -43,14 +43,14 @@ def calc_jet_lat(u, lats, plot=False):
 if __name__ == "__main__":
 
 
-    Lsmin = 255
-    Lsmax = 285
+    Lsmin = 270
+    Lsmax = 300
 
     theta0 = 200.
     kappa = 1/4.0
     p0 = 610.
 
-    ilev = 350
+    ilev = 300
 
     sh = False
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
     infiles = '/isentropic*'
 
-    figpath = 'OpenMARS_figs/'
+    figpath = 'OpenMARS_figs/PV_maps'
 
     d = xr.open_mfdataset(PATH+infiles, decode_times=False, concat_dim='time',
                            combine='nested',chunks={'time':'auto'})
@@ -95,9 +95,9 @@ if __name__ == "__main__":
 
 
 
-    vmin = 10
-    vmax = 101
-    step = 10
+    vmin = 1
+    vmax = 6.1
+    step = 0.5
 
     boundaries0, _, _, cmap0, norm0 = funcs.make_colourmap(vmin, vmax, step,
                                                 col = 'viridis', extend = 'both')
@@ -123,17 +123,17 @@ if __name__ == "__main__":
             my = i + 25
 
         if sh == True:
-            funcs.make_stereo_plot(ax, [-50, -60, -70, -80, latm],
+            funcs.make_stereo_plot(ax, [-55, -60, -70, -80, latm],
                               [-180, -120, -60, 0, 60, 120, 180],
                                       circle, alpha = 0.3, linestyle = '--',)
             #x["scaled_PV"] = - x.scaled_PV
         else:
-            funcs.make_stereo_plot(ax, [latm, 80, 70, 60, 50],
+            funcs.make_stereo_plot(ax, [latm, 80, 70, 60, 55],
                               [-180, -120, -60, 0, 60, 120, 180],
                               circle, alpha = 0.3, linestyle = '--',)
 
         x0 = x.where(d.MY==my,drop=True).mean(dim='time')
-        a0 = x0.scaled_PV*10**5
+        a0 = x0.scaled_PV*10**4
         if sh == True:
             a0 = -a0
         ax.set_title('MY '+str(my),weight='bold',fontsize=20)
@@ -142,16 +142,29 @@ if __name__ == "__main__":
         if my == 28:
             if sh == True:
                 continue
+        
+        q_max = []
+        a0 = a0.load()
+        for l in range(len(a0.lon)):
+            q = a0.sel(lon = a0.lon[l],method="nearest")
+            q0, _ = funcs.calc_jet_lat(q, a0.lat)
+            if q0 > latm:
+                q0 = latm
+            q_max.append(q0)
 
         ax.contourf(a0.lon,a0.lat,a0,transform=ccrs.PlateCarree(),
                     cmap=cmap0,levels=[-100]+boundaries0+[500], norm=norm0)
-        c0 = ax.contour(x0.lon, x0.lat, x0.uwnd,colors='0.8',levels=[0,40,80,120],
+        c0 = ax.plot(a0.lon, q_max,transform=ccrs.PlateCarree(),
+                     color='blue', linewidth=1)
+        c0 = ax.contour(x0.lon, x0.lat, x0.uwnd,colors='0.8',levels=[0,50,100],
                         transform=ccrs.PlateCarree(),linewidths = 1)
 
-        c0.levels = [cPV.nf(val) for val in c0.levels]
+        c0.levels = [funcs.nf(val) for val in c0.levels]
 
         ax.clabel(c0, c0.levels, inline=1, fmt=fmt, fontsize=15)
-        plt.savefig('Thesis/OpenMARS_average_PV_yearly_'+str(ilev)+'K_Ls'+str(Lsmin)+'-'+str(Lsmax)+'_'+hem+'.pdf',
+        plt.savefig(figpath+'/OpenMARS_average_PV_yearly_'+str(ilev)+'K_Ls'+str(Lsmin)+'-'+str(Lsmax)+'_'+hem+'.pdf',
+                bbox_inches='tight', pad_inches = 0.02)
+        plt.savefig(figpath+'/OpenMARS_average_PV_yearly_'+str(ilev)+'K_Ls'+str(Lsmin)+'-'+str(Lsmax)+'_'+hem+'.png',
                 bbox_inches='tight', pad_inches = 0.02)
 
     plt.subplots_adjust(hspace=.17,wspace=.02, bottom=0.1)
@@ -160,13 +173,15 @@ if __name__ == "__main__":
 
     cb = fig.colorbar(cm.ScalarMappable(norm=norm0,cmap=cmap0),ax=axs,
                       orientation='horizontal',extend='both',aspect=30,shrink=0.9,
-                      ticks=boundaries0[slice(None,None,1)],pad=.03)
+                      ticks=boundaries0[slice(None,None,2)],pad=.03)
 
-    cb.set_label(label='Lait-scaled PV (10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
+    cb.set_label(label='Lait-scaled PV (MPVU)',
                  fontsize=20)
 
     cb.ax.tick_params(labelsize=15)
 
 
-    plt.savefig('Thesis/OpenMARS_average_PV_yearly_'+str(ilev)+'K_Ls'+str(Lsmin)+'-'+str(Lsmax)+'_'+hem+'.pdf',
+    plt.savefig(figpath+'/OpenMARS_average_PV_yearly_'+str(ilev)+'K_Ls'+str(Lsmin)+'-'+str(Lsmax)+'_'+hem+'.pdf',
+                bbox_inches='tight', pad_inches = 0.02)
+    plt.savefig(figpath+'/OpenMARS_average_PV_yearly_'+str(ilev)+'K_Ls'+str(Lsmin)+'-'+str(Lsmax)+'_'+hem+'.png',
                 bbox_inches='tight', pad_inches = 0.02)

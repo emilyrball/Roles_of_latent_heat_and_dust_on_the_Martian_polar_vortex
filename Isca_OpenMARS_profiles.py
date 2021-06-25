@@ -59,26 +59,60 @@ if __name__ == "__main__":
     p0 = 610.
 
     ### choose your files
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel',]
+    exp = [
+        #'soc_mars_mk36_per_value70.85_none_mld_2.0',
+        #'soc_mars_mk36_per_value70.85_none_mld_2.0_lh_rel',
+        #'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
+        #'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05_lh_rel',
+        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
+        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
+        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05',
+        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel',
+    ]
 
-    location = ['triassic','triassic', 'anthropocene', 'silurian']
+
+    location = [
+        #'triassic',
+        #'triassic',
+        #'anthropocene',
+        #'anthropocene',
+        'triassic',
+        'triassic',
+        'anthropocene',
+        'silurian',
+    ]
 
     #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file =[25, 25, 30, 30]
-    end_file = [ 99, 99, 99, 139]
+    start_file = [
+        #33,
+        #33,
+        #33,
+        #33,
+        33,
+        33,
+        33,
+        33,
+        ]
+    end_file = [
+        #99,
+        #99, 
+        #99, 
+        #99, 
+        99, 
+        99, 
+        99, 
+        139,
+        ]
 
     freq = 'daily'
 
     interp_file = 'atmos_'+freq+'_interp_new_height_temp_PV.nc'
     pfull = 1.
 
-    figpath = 'Thesis/new_sims/'
+    figpath = 'Thesis/vertical_profiles/'
 
-    Lsmin = 255.
-    Lsmax = 285.
+    Lsmin = 270.
+    Lsmax = 300.
 
 
     inpath = 'link-to-anthro/OpenMARS/Isobaric/'
@@ -96,11 +130,11 @@ if __name__ == "__main__":
 
 
 
-    boundaries0, _, _, cmap0, norm0 = funcs.make_colourmap(110, 251, 10,
+    boundaries0, _, _, cmap0, norm0 = funcs.make_colourmap(130, 221, 5,
                                         col = 'cet_coolwarm', extend = 'both')
     boundaries1, _, _, cmap1, norm1 = funcs.make_colourmap(-150, 151, 25,
                                         col = 'cet_coolwarm', extend = 'both')
-    boundaries, _, _, cmap, norm = funcs.make_colourmap(-5, 66, 5,
+    boundaries, _, _, cmap, norm = funcs.make_colourmap(-0.5, 7.1, 0.5,
                                         col = 'OrRd', extend = 'max')
 
     if plt.rcParams["text.usetex"]:
@@ -178,14 +212,14 @@ if __name__ == "__main__":
                         ticks = boundaries1[slice(None, None, 2)])
     cb2 = fig2.colorbar(cm.ScalarMappable(norm, cmap), ax = axs2, extend = 'max',
                         aspect = 50, pad = 0.2, orientation = 'horizontal',
-                        ticks = boundaries[slice(None, None, 1)])
+                        ticks = boundaries[slice(1, None, 2)])
 
 
     cb0.set_label(label='Temperature (K)',
                  fontsize=22)
     cb1.set_label(label='u-wind (ms$^{-1}$)',
                  fontsize=22)
-    cb2.set_label(label='Lait-scaled PV (10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
+    cb2.set_label(label='Lait-scaled PV (MPVU)',
                  fontsize=22)
 
     cb0.ax.tick_params(labelsize=18)
@@ -194,22 +228,22 @@ if __name__ == "__main__":
 
 
     axs0[0].set_title('OpenMARS', fontsize=20, weight='bold', y = 1.06)
-    axs0[1].set_title('Standard', fontsize=20, weight='bold', y = 1.06)
-    axs0[2].set_title('Latent heat', fontsize=20, weight='bold', y = 1.06)
-    axs0[3].set_title('Dust', fontsize=20, weight='bold', y = 1.06)
-    axs0[4].set_title('Latent heat \nand dust', fontsize=20, weight='bold', y = 1.04)
+    axs0[1].set_title('T', fontsize=20, weight='bold', y = 1.06)
+    axs0[2].set_title('LH+T', fontsize=20, weight='bold', y = 1.06)
+    axs0[3].set_title('D+T', fontsize=20, weight='bold', y = 1.06)
+    axs0[4].set_title('LH+D+T', fontsize=20, weight='bold', y = 1.06)
 
     axs1[0].set_title('OpenMARS', fontsize=20, weight='bold', y = 1.06)
-    axs1[1].set_title('Standard', fontsize=20, weight='bold', y = 1.06)
-    axs1[2].set_title('Latent heat', fontsize=20, weight='bold', y = 1.06)
-    axs1[3].set_title('Dust', fontsize=20, weight='bold', y = 1.06)
-    axs1[4].set_title('Latent heat \nand dust', fontsize=20, weight='bold', y = 1.04)
+    axs1[1].set_title('T', fontsize=20, weight='bold', y = 1.06)
+    axs1[2].set_title('LH+T', fontsize=20, weight='bold', y = 1.06)
+    axs1[3].set_title('D+T', fontsize=20, weight='bold', y = 1.06)
+    axs1[4].set_title('LH+D+T', fontsize=20, weight='bold', y = 1.06)
 
     axs2[0].set_title('OpenMARS', fontsize=20, weight='bold', y = 1.06)
-    axs2[1].set_title('Standard', fontsize=20, weight='bold', y = 1.06)
-    axs2[2].set_title('Latent heat', fontsize=20, weight='bold', y = 1.06)
-    axs2[3].set_title('Dust', fontsize=20, weight='bold', y = 1.06)
-    axs2[4].set_title('Latent heat \nand dust', fontsize=20, weight='bold', y = 1.04)
+    axs2[1].set_title('T', fontsize=20, weight='bold', y = 1.06)
+    axs2[2].set_title('LH+T', fontsize=20, weight='bold', y = 1.06)
+    axs2[3].set_title('D+T', fontsize=20, weight='bold', y = 1.06)
+    axs2[4].set_title('LH+D+T', fontsize=20, weight='bold', y = 1.06)
 
 
 
@@ -229,12 +263,6 @@ if __name__ == "__main__":
     axs2[0].spines['top'].set_linewidth(3)
     axs2[0].spines['bottom'].set_linewidth(3)
 
-    
-    fig0.savefig(figpath+'temp_all.pdf',bbox_inches='tight', pad_inches = 0.04)
-    fig1.savefig(figpath+'uwnd_all.pdf',bbox_inches='tight', pad_inches = 0.04)
-    fig2.savefig(figpath+'PV_all.pdf',bbox_inches='tight', pad_inches = 0.04)
-
-
     ds = xr.open_mfdataset(inpath + '*mars_my*', decode_times=False, concat_dim='time',
                            combine='nested')
 
@@ -250,7 +278,7 @@ if __name__ == "__main__":
     theta1 = ds.theta.mean(dim='time').mean(dim='lon')
 
     lait1 = funcs.lait(ds.PV, ds.theta, theta0, kappa=kappa)
-    lait1 = lait1.mean(dim='time').mean(dim='lon')*10**5
+    lait1 = lait1.mean(dim='time').mean(dim='lon')*10**4
 
     p = ds.plev
     lat = ds.lat
@@ -327,7 +355,7 @@ if __name__ == "__main__":
 
         theta = funcs.calculate_theta(d.temp, d.pfull*100, p0=p0, kappa=kappa)
 
-        lait = funcs.lait(d.PV, theta, theta0, kappa=kappa)*10**5
+        lait = funcs.lait(d.PV, theta, theta0, kappa=kappa)*10**4
 
         lait = lait.mean(dim='time').mean(dim='lon').squeeze()
 
