@@ -28,9 +28,13 @@ if __name__ == "__main__":
     else:
         fmt = '%r'
 
+    theta0 = 200.
+    kappa = 1/4.0
+    p0 = 610.
 
-    EMARS = True
+    EMARS = False
     SD = False
+    norm = True
     ilev = 350
 
     latmax = 90
@@ -50,6 +54,17 @@ if __name__ == "__main__":
     else:
         sd = ''
 
+    if norm == True:
+        NORM = '_norm'
+        ymin = - 0.5
+        ymax = 9.4
+        tics = [0,1,2,3,4,5,6,7,8,9]
+    else:
+        NORM = ''
+        ymin = - 1
+        ymax = 55
+        tics = [0,10,20,30,40,50]
+
     linestyles = ['solid', 'dotted','dashed', 'dashdot']
 
     newlabel = ['Northern\nsummer solstice', 'Northern\nwinter solstice']
@@ -61,8 +76,8 @@ if __name__ == "__main__":
         ax.set_xlim([0,360])
         ax.tick_params(length = 6, labelsize = 18)
 
-        ax.set_ylim([-0.1, 149])
-        ax.set_yticks([0,25,50,75,100,125])
+        ax.set_ylim([ymin, ymax])
+        ax.set_yticks(tics)
 
         ax2 = ax.twiny()
         ax2.set_xticks(newpos)
@@ -83,7 +98,7 @@ if __name__ == "__main__":
         ax.set_xlabel('solar longitude (degrees)', fontsize = 20)
         
         if i == 0:
-            ax.set_ylabel('eddy enstrophy ($10^{6}$PVU$^2$)', fontsize = 20)
+            ax.set_ylabel('eddy enstrophy (MPVU$^2$)', fontsize = 20)
         else:
             ax.set_yticklabels([])
 
@@ -96,7 +111,7 @@ if __name__ == "__main__":
 
 
 
-    plt.savefig('Thesis/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+'.pdf',
+    plt.savefig('Thesis/eddy_enstrophy/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+NORM+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
 
@@ -127,8 +142,18 @@ if __name__ == "__main__":
         di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
         if EMARS == True:
             di = di.sortby(di.Ls, ascending=True)
-        Zi = funcs.calc_eddy_enstr(di.PV) * 10**6
+        
+        # Lait scale PV
+        theta = di.ilev
+        print("Scaling PV")
+        laitPV = funcs.lait(di.PV, theta, theta0, kappa = kappa)
+        di["scaled_PV"] = laitPV
+        
 
+        Zi = funcs.calc_eddy_enstr(di.scaled_PV) * 10**8
+        if norm == True:
+            qbar = laitPV.mean(dim='lat').mean(dim='lon')
+            Zi = Zi/(qbar * 10 **4)
         
         Ls = di.Ls
         
@@ -156,13 +181,13 @@ if __name__ == "__main__":
         ci = ax.plot(Ls, Zi, label='MY '+str(i), color=color,
                      linestyle = linestyle)
                      
-        plt.savefig('Thesis/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+'.pdf',
+        plt.savefig('Thesis/eddy_enstrophy/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+NORM+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
     
     axs[0].legend(fontsize = 15, loc = 'upper center')
     axs[1].legend(fontsize = 15, loc = 'upper center')
 
-    plt.savefig('Thesis/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+'.pdf',
+    plt.savefig('Thesis/eddy_enstrophy/eddy_enstrophy_'+reanalysis+'_' +str(ilev)+ 'K'+sd+NORM+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
 

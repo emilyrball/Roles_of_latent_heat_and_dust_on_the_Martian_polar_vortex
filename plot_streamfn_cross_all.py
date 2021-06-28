@@ -89,7 +89,7 @@ if __name__ == "__main__":
     axs[1,0].set_ylabel('pressure (hPa)', fontsize = 20)
     axs[0,0].text(-0.26, 0.3, "OpenMARS", transform=axs[0,0].transAxes, 
                         size=22, weight='bold',rotation='vertical')
-    axs[1,0].text(-0.26, 0.39, "Model", transform=axs[1,0].transAxes, 
+    axs[1,0].text(-0.26, 0.39, "Control", transform=axs[1,0].transAxes, 
                         size=22, weight='bold',rotation='vertical')
     
     axs[0,0].set_title('MY 28', fontsize = 22, weight = 'bold', y = 1.02)

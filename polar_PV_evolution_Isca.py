@@ -86,7 +86,7 @@ if __name__ == "__main__":
     kappa = 1/4.0
     p0 = 610.
 
-    year = "MY 28"
+    year = "Yearly (MY 28)"
 
     sh = False
     ilev = 350
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     latmin = 60
     latmax = 90
 
-    Lsmin = 200
+    Lsmin = 210
     Lsmax = 360
 
     red  = '#C85200'
@@ -121,19 +121,19 @@ if __name__ == "__main__":
     ### choose your files
     exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY28_7.4e-05_lh_rel',
            'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel',
-           #'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years',
+           'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years',
     ]
     location = ['silurian',
                 'silurian',
-                #'anthropocene',
+                'anthropocene',
     ]
     start_file = [30,
                   30,
-                  #21,
+                  21,
     ]
     end_file = [222,
                 139,
-                #222,
+                222,
     ]
 
     freq = 'daily'
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     labels = [
         'Temperature (K)',
         'Zonal wind (ms $^{-1}$)',
-        'Lait-scaled PV\n(10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
+        'Lait-scaled PV (MPVU)',
     ]
 
     fig, axs = plt.subplots(3,1,figsize=(10,14))
@@ -225,7 +225,7 @@ if __name__ == "__main__":
         #year_mean = year_mean.rolling(new_time = 4, center = True)
             
         #year_mean = year_mean.mean()
-        mean_PV = year_mean.scaled_PV * 10**5
+        mean_PV = year_mean.scaled_PV * 10**4
         mean_wind = year_mean.uwnd
 
         if jetmax == True:
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         if exp[i] == 'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_' \
                         + 'topo_cdod_clim_scenario_7.4e-05_lh_rel':
             linestyle = '--'
-            labc = "climatology"
+            labc = "Control"
 
         ct=axs[2].plot(Ls[:-5], mean_PV[:-5], color = col, label = labc,
                        linewidth = '1.1', linestyle = linestyle)
@@ -261,10 +261,12 @@ if __name__ == "__main__":
             labj = ""
             if exp[i] == 'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years':
                 if j == 3:
-                    labj = "MY 28"
+                    labj = "High Dust (MY 28)"
                     col = grey
+                else:
+                    continue
 
-            cti = axs[2].plot(Ls[:-5], Zi.scaled_PV[:-5]*10**5,
+            cti = axs[2].plot(Ls[:-5], Zi.scaled_PV[:-5]*10**4,
                            label = labj, color = col,
                            linewidth = '0.6', linestyle = '-',
                            alpha = 0.4)
@@ -310,8 +312,10 @@ if __name__ == "__main__":
             labj = ""
             if exp[i] == 'soc_mars_mk36_per_value70.85_none_mld_2.0_all_years':
                 if j == 3:
-                    labj = "MY 28"
+                    labj = "High Dust (MY 28)"
                     col = grey
+                else:
+                    continue
 
             cti = axs[0].plot(Ls[:-5], Zi.temp[:-5], label = labj,
                            color = col, linewidth = '0.6',

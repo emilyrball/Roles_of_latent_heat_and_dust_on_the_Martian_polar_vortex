@@ -3,7 +3,6 @@ import xarray as xr
 import os, sys
 import glob
 import analysis_functions as funcs
-import PVmodule as PVmod
 
 from cartopy import crs as ccrs
 import matplotlib.pyplot as plt
@@ -19,9 +18,9 @@ def fmt(x, pos):
     b = int(b)
     return r'${} \times 10^{{{}}}$'.format(a, b)
 
-if "__name__" == "__main__":
-    Lsmin = 255
-    Lsmax = 285
+if __name__ == "__main__":
+    Lsmin = 270
+    Lsmax = 300
     
     thetalevs=[200., 250., 300., 350., 400., 450., 500., 550., 600., 650., 700., 750., 800., 850., 900., 950.]
     
@@ -42,9 +41,9 @@ if "__name__" == "__main__":
     nrow = 2
     ncol = 4
 
-    vmin = -5
-    vmax = 65
-    step = 5
+    vmin = -0.5
+    vmax = 7.1
+    step = 0.5
 
     fig, axs = plt.subplots(nrow, ncol, sharey=True,sharex=True,
                             figsize=(25, 8))
@@ -81,8 +80,8 @@ if "__name__" == "__main__":
         d_O = d_O.where(d_O.Ls <= Lsmax, drop = True)
         d_O = d_O.where(d_O.lat >= 0, drop = True)
         
-        lait_O = cPV.lait(d_O.PV, d_O.theta, theta_0, kappa=kappa)
-        pv_o = lait_O.mean(dim='time').mean(dim='lon') *10**5
+        lait_O = funcs.lait(d_O.PV, d_O.theta, theta_0, kappa=kappa)
+        pv_o = lait_O.mean(dim='time').mean(dim='lon') *10**4
         t_o = d_O.theta.mean(dim='time').mean(dim='lon')
         u_o = d_O.uwnd.mean(dim='time').mean(dim='lon')
 
@@ -118,9 +117,9 @@ if "__name__" == "__main__":
 
     
     cb = fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap),ax=axs,
-                extend='max', ticks=boundaries[slice(None,None,1)],pad=0.01)
+                extend='max', ticks=boundaries[slice(1,None,2)],pad=0.01)
 
-    cb.set_label(label='Lait-scaled PV (10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
+    cb.set_label(label='Lait-scaled PV (MPVU)',
                  fontsize=20)
     cb.ax.tick_params(labelsize=18)
 

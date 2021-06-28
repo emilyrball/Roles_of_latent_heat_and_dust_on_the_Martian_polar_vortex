@@ -324,7 +324,6 @@ def calc_Hadley_lat(u, lats, plot = False):
         jet_max = coefs[2]+coefs[1]*jet_lat+coefs[0]*jet_lat**2
 
     else:
-        print(u.values)
         jet_lat = np.nan
         jet_max = np.nan
 

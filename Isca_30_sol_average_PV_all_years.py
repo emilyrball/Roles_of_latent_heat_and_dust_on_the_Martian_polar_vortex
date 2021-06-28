@@ -31,8 +31,8 @@ def make_coord_MY(x, index):
     return dsr, N, n
 
 if __name__ == "__main__":
-    Lsmin = 255
-    Lsmax = 285
+    Lsmin = 270
+    Lsmax = 300
 
     theta0 = 200.
     kappa = 1/4.0
@@ -54,22 +54,22 @@ if __name__ == "__main__":
 
     #filepath = '/export/triassic/array-01/xz19136/Isca_data'
     start_file=[30, 30, 30, 30, 30, 30, 30, 30]
-    end_file = [88, 99, 88, 99, 96, 99, 99, 88]
+    end_file = [80, 99, 88, 99, 96, 99, 99, 88]
 
 
-    figpath = 'Thesis/'
+    figpath = 'Isca_figs/PV_maps'
 
     freq = 'daily'
 
     interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
-    ilev = 350.
+    ilev = 300.
 
 
     theta, center, radius, verts, circle = funcs.stereo_plot()
 
-    vmin = 10
-    vmax = 101
-    step = 10
+    vmin = 1
+    vmax = 6.6
+    step = 0.5
 
     fig, axs = plt.subplots(nrows=2,ncols=4, figsize = (14,8),
                             subplot_kw = {'projection':ccrs.NorthPolarStereo()})
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         d = d.where(d.mars_solar_long <= Lsmax, drop=True)
         d = d.where(Lsmin <= d.mars_solar_long, drop=True)
 
-        d = d.sel(lat=d.lat[50<d.lat])
+        d = d.sel(lat=d.lat[55<d.lat])
         d = d.sel(ilev=ilev, method='nearest').squeeze()
 
         #d, index = assign_MY(d)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 else:
                     my = j + 25
 
-                funcs.make_stereo_plot(ax, [latm, 80, 70, 60, 50],
+                funcs.make_stereo_plot(ax, [latm, 80, 70, 60,55],
                                       [-180, -120, -60, 0, 60, 120, 180],
                                       circle, alpha = 0.3, linestyle = '--',)
 
@@ -147,20 +147,35 @@ if __name__ == "__main__":
                 a = x
 
                 u = a.uwnd.mean(dim='time').squeeze()
-                a = a.scaled_PV.mean(dim='time').squeeze() * 10**5
+                a = a.scaled_PV.mean(dim='time').squeeze() * 10**4
 
-                c0 = ax.contourf(a.lon,a.lat,a,cmap=cmap,transform=ccrs.PlateCarree(),
+                q_max = []
+                a = a.load()
+                for l in range(len(a.lon)):
+                    q = a.sel(lon = a.lon[l],method="nearest")
+                    q0, _ = funcs.calc_jet_lat(q, a.lat)
+                    q_max.append(q0)
+
+                cf = ax.contourf(a.lon,a.lat,a,cmap=cmap,transform=ccrs.PlateCarree(),
                                 norm=norm,levels=[-50]+boundaries+[150])
-                c = ax.contour(x.lon, x.lat, u, colors='0.8', levels=[0,40,80,120],
+                c0 = ax.plot(a.lon, q_max,transform=ccrs.PlateCarree(),
+                     color='blue', linewidth=1)
+    
+                #c0.levels = [funcs.nf(val) for val in c0.levels]
+                #axs[0,0].clabel(c0, c0.levels, inline=1, fmt=fmt, fontsize=14)
+
+                c = ax.contour(x.lon, x.lat, u, colors='0.8', levels=[0,50,100],
                                 transform=ccrs.PlateCarree(),linewidths = 1)
                 ax.text(0.05, 0.95, string.ascii_lowercase[j], transform=ax.transAxes, 
                         size=20, weight='bold')
 
-                c.levels = [cPV.nf(val) for val in c.levels]
+                c.levels = [funcs.nf(val) for val in c.levels]
                 ax.set_title('MY '+str(my),weight='bold',fontsize=20)
                 ax.clabel(c, c.levels, inline=1, fmt=fmt, fontsize=15)
                 print(i)
                 plt.savefig(figpath+'/Isca_average_winter_PV_'+str(ilev)+'K_'+str(Lsmin)+'-'+str(Lsmax)+'_all_years_7.4e-05.pdf',
+                    bbox_inches='tight', pad_inches = 0.02)
+                plt.savefig(figpath+'/Isca_average_winter_PV_'+str(ilev)+'K_'+str(Lsmin)+'-'+str(Lsmax)+'_all_years_7.4e-05.png',
                     bbox_inches='tight', pad_inches = 0.02)
         #####
 
@@ -168,12 +183,14 @@ if __name__ == "__main__":
                       orientation='horizontal', extend='both', aspect=30,shrink=0.9,
                       pad=.03,ticks=boundaries[slice(None,None,1)])
 
-    cb.set_label(label='Lait-scaled PV (10$^{-5}$ K m$^2$ kg$^{-1}$ s$^{-1}$)',
+    cb.set_label(label='Lait-scaled PV (MPVU)',
                  fontsize=20)
     cb.ax.tick_params(labelsize=15)
 
 
     plt.savefig(figpath+'/Isca_average_winter_PV_'+str(ilev)+'K_'+str(Lsmin)+'-'+str(Lsmax)+'_all_years_7.4e-05.pdf',
+                bbox_inches='tight', pad_inches = 0.02)
+    plt.savefig(figpath+'/Isca_average_winter_PV_'+str(ilev)+'K_'+str(Lsmin)+'-'+str(Lsmax)+'_all_years_7.4e-05.png',
                 bbox_inches='tight', pad_inches = 0.02)
 
 
