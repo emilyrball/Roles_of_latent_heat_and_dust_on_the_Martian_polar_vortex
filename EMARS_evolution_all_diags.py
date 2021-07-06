@@ -33,29 +33,16 @@ if __name__ == "__main__":
     kappa = 1/4.0
     p0 = 610.
 
-    EMARS = True
-    SD = False
-    ilev = 350
-
     latmax = 90
     latmin = 60
 
-    if EMARS == True:
-        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
-        files = '/*isentropic*'
-        reanalysis = 'EMARS'
-    else:
-        reanalysis = 'OpenMARS'
-        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
-        files = '/*isentropic*'
+    ilev = 350
+
+    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021'
+    files = '/*EMARS*'
+    reanalysis = 'EMARS'
 
     figpath = reanalysis+'_figs/'
-
-    if SD == True:
-        sd = '_SD'
-    else:
-        sd = ''
-
 
     linestyles = ['solid', 'dotted','dashed', 'dashdot']
     newlabel = ['Northern\nsummer solstice', 'Northern\nwinter solstice']
@@ -120,29 +107,24 @@ if __name__ == "__main__":
 
     plt.subplots_adjust(hspace=.06, wspace = 0.2)
 
-    plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+sd+'.pdf',
+    plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
     d = xr.open_mfdataset(PATH+files, decode_times=False, concat_dim='time',
                            combine='nested',chunks={'time':'auto'})
 
-    if EMARS==True:
-        d["Ls"] = d.Ls.expand_dims({"lat":d.lat})
-        #d = d.rename({"pfull":"plev"})
-        #d = d.rename({"t":"tmp"})
-        smooth = 200
-        yearmax = 32
-    else:
-        smooth = 250
-        d = d.sortby('time', ascending=True)
-        yearmax = 33
+    #d["Ls"] = d.Ls.expand_dims({"lat":d.lat})
+    #d = d.rename({"pfull":"plev"})
+    #d = d.rename({"t":"tmp"})
+    smooth = 200
+    yearmax = 32
 
-    d = d.sel(ilev = ilev, method='nearest').squeeze()
+    #d = d.sel(ilev = ilev, method='nearest').squeeze()
 
     latm = d.lat.max().values
 
     # Lait scale PV
-    theta = d.ilev
+    theta = ilev
     print("Scaling PV")
     laitPV = funcs.lait(d.PV, theta, theta0, kappa = kappa)
     d["scaled_PV"] = laitPV
@@ -166,8 +148,7 @@ if __name__ == "__main__":
         di = d.where(d.MY == i, drop=True)
         print(i)
         di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
-        if EMARS == True:
-            di = di.sortby(di.Ls, ascending=True)
+        di = di.sortby(di.Ls, ascending=True)
         di = di.transpose("lat","lon","time")
         di = di.sortby("lat", ascending = True)
         di = di.sortby("lon", ascending = True)
@@ -189,10 +170,7 @@ if __name__ == "__main__":
         qmax = Zi.mean(dim="lat")
         for l in range(len(Zi.time)):
             qmul = qmax[l]
-            if EMARS == True:
-                q = Zi[:,l]
-            else:
-                q = Zi.sel(time=Zi.time[l],method="nearest")
+            q = Zi[:,l]
             
             qlat, _ = funcs.calc_jet_lat(q, q.lat)
             if qlat > latm:
@@ -235,7 +213,7 @@ if __name__ == "__main__":
         ci.append(c1)
         cimax.append(c2)
                      
-        plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+sd+'.pdf',
+        plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
         
@@ -271,7 +249,7 @@ if __name__ == "__main__":
         ui.append(c3)
 
                      
-        plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+sd+'.pdf',
+        plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
     
     c0 = [[ci[j]] for j in range(len(ci))]
@@ -290,5 +268,5 @@ if __name__ == "__main__":
                  fontsize = 14, loc = 'center left', handlelength = 3,
             handler_map={tuple: HandlerTuple(ndivide=None)})
 
-    plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+sd+'.pdf',
+    plt.savefig(figpath+'evo_all_' +str(ilev)+ 'K_'+reanalysis+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
