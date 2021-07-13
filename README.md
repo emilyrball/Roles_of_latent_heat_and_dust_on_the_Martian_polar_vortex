@@ -17,7 +17,7 @@ Functions to allow calculation of potential vorticity and interpolation to isent
 Calculates the meridional overturning streamfunction from OpenMARS data.
 
 **[calc_streamfunction_from_dsr.py](calc_streamfunction_from_dsr.py):**
-Calculates the meridional overturning streamfunction from zonal ensemble mean Isca data (as created by create_dsr_Isca.py).
+Calculates the meridional overturning streamfunction from zonal ensemble mean Isca data.
 
 **[calculate_PV_Isca.py](calculate_PV_Isca.py):**
 Calculates isobaric and isentropic PV from Isca data on full pressure levels.
@@ -28,44 +28,71 @@ Calculates isobaric and isentropic PV from Isca data on full pressure levels. No
 **[calculate_PV_OpenMARS.py](calculate_PV_OpenMARS.py):**
 Calculates isobaric and isentropic PV from OpenMARS data.
 
-**[create_dsr_Isca.py](create_dsr_Isca.py):**
-Calculates the ensemble mean for a given Isca simulation.
+**[data_reduct_EMARS.py](data_reduct_EMARS.py)**
+Reduces volume of EMARS data needed to plot figures.
+
+**[data_reduct_Isca.py](data_reduct_Isca.py)**
+Reduces volume of Isca data needed to plot figures on the 300K surface.
+
+**[data_reduct_Isca_350K.py](data_reduct_Isca_350K.py)**
+Reduces volume of Isca data needed to plot figures on the 350K surface.
+
+**[data_reduct_Isca_t_tend.py](data_reduct_Isca_t_tend.py)**
+Reduces volume of Isca data needed to plot temperature tendency figures.
+
+**[data_reduct_Isca_zonal.py](data_reduct_Isca_zonal.py)**
+Reduces volume of Isca data needed to plot zonally averaged figures.
+
+**[data_reduct_OM_300K.py](data_reduct_OM_300K.py)**
+Reduces volume of OpenMARS data needed to plot PV on the 300K surface.
+
+**[data_reduct_OM_zonal.py](data_reduct_OM_zonal.py)**
+Reduces volume of OpenMARS data needed to plot zonal mean figures.
 
 **[dust_distribution.py](dust_distribution.py):**
 Plots Figure 1.
 
 **[eddy_enstrophy_all_new.py](eddy_enstrophy_all_new.py):**
-Plots Figure 8.
+Plots Figure 10.
 
-**[eddy_enstrophy_EMARS.py](eddy_enstrophy_EMARS.py):**
+**[EMARS_evolution_all_diags.py](EMARS_evolution_all_diags.py):**
+Plots Figure 14.
+
+**[Hadley_and_jet_strength.py](Hadley_and_jet_strength.py):**
 Plots Figure 12.
 
+**[Hadley_evolution_all.py](Hadley_evolution_all.py):**
+Plots strength and edge of the Hadley cell, not shown in paper.
+
 **[Isca_30_sol_average_PV.py](Isca_30_sol_average_PV.py):**
-Plots scaled PV on an isentropic surface for all process attribution experiments.
+Plots scaled PV on an isentropic surface for all process attribution experiments (Figure 6).
 
 **[Isca_30_sol_average_PV_all_years.py](Isca_30_sol_average_PV_all_years.py):**
-Plots scaled PV on an isentropic surface for all yearly simulations (Figures 6 & 11).
+Plots scaled PV on an isentropic surface for all yearly simulations (Figure 7).
+
+**[Isca_30_sol_average_PV_all_years_old.py](Isca_30_sol_average_PV_all_years_old.py):**
+Plots scaled PV on an isentropic surface for all high dust simulations (Figure 13).
 
 **[Isca_OpenMARS_profiles.py](Isca_OpenMARS_profiles.py):**
 Plots cross-sectional profiles of temperature, zonal wind and PV, comparing Isca simulations to OpenMARS (Figures 4 & 5).
 
+**[jet_evolution_all.py](jet_evolution_all.py):**
+Plots evolution of jet strength and location for reanalysis and simulations, not shown.
+
 **[lh_evolution_all.py](lh_evolution_all.py):**
-Plots Figure 9.
+Plots Figure 11.
 
 **[OpenMARS_30_sol_average_PV.py](OpenMARS_30_sol_average_PV.py):**
 Plots scaled PV on an isentropic surface for all years of OpenMARS data (Figure 3).
 
-**[plot_streamfn_cross_OpenMARS_compare.py](plot_streamfn_cross_OpenMARS_compare.py):**
-Plots Figure 13.
-
 **[plot_streamfn_cross_all.py](plot_streamfn_cross_all.py):**
-Plots Figure 7.
-
-**[plot_streamfunction_OpenMARS.py](plot_streamfunction_OpenMARS.py):**
-Plots Figure 10.
+Plots Figure 8.
 
 **[polar_PV_evolution_Isca.py](polar_PV_evolution_Isca.py):**
-Plots ensemble spread of temperature, zonal wind and scaled PV from Isca simulations.
+Plots ensemble spread of temperature, zonal wind and scaled PV from Isca simulations, not shown in paper.
+
+**[polar_PV_evolution_all.py](polar_PV_evolution_all.py):**
+Plots scaled PV from reanalysis and simulations (Figure 9).
 
 **[PV_cross-section_OpenMARS.py](PV_cross-section_OpenMARS.py):**
 Plots Figure 2.
