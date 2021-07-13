@@ -128,18 +128,14 @@ if __name__ == "__main__":
     
     ##### get data #####
     
-    PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Streamfn'
+    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
     
-    if Lsmax < 180:
-        path = '_0-75'
-    else:
-        path = '_180-360'
     
     years = []
 
     for i in yearlist:
         year = 'MY'+str(i)
-        infiles = '/'+year+path+'_psi.nc'
+        infiles = 'OpenMARS_'+year+'_Ls200-360_psi.nc'
         d = xr.open_mfdataset(PATH + infiles, decode_times = False,
                           concat_dim = 'time', combine = 'nested',
                           chunks = {'time' : 'auto'})
@@ -195,15 +191,10 @@ if __name__ == "__main__":
     fig.savefig(figpath+'all_psi_cross-section_Ls' + str(Lsmin) + '-' \
             + str(Lsmax) + '.pdf', bbox_inches = 'tight', pad_inches = 0.06)
 
-    
 
 
-    PATH = '/export/silurian/array-01/xz19136/Isca_data/Streamfn'
-        
-    infiles = '/topo_MY28_lh_180-360_psi.nc'
-    d = xr.open_mfdataset(PATH + infiles, decode_times = False,
-                          concat_dim = 'time', combine = 'nested',
-                          chunks = {'time' : 'auto'})
+    infiles = '/MY28_Ls270-300_psi.nc'
+    d = xr.open_mfdataset(PATH + infiles, decode_times = False)
 
     ##### reduce dataset #####
     d = d.astype('float32')
@@ -213,10 +204,8 @@ if __name__ == "__main__":
     d = d.mean(dim = "time", skipna = True) / 10 ** 8
     d["pfull"] = d.pfull / 100
 
-    infiles = '/topo_scenario_lh_180-360_psi.nc'
-    dclim = xr.open_mfdataset(PATH + infiles, decode_times = False,
-                          concat_dim = 'time', combine = 'nested',
-                          chunks = {'time' : 'auto'})
+    infiles = '/topo_dust_lh_Ls270-300_psi.nc'
+    dclim = xr.open_mfdataset(PATH + infiles, decode_times = False)
 
     ##### reduce dataset #####
     dclim = dclim.astype('float32')

@@ -33,16 +33,23 @@ if __name__ == "__main__":
     kappa = 1/4.0
     p0 = 610.
 
-    SD = False
-    ilev = 350
+    EMARS = False
+    SD = True
+    ilev = 50
 
     latmax = 90
     latmin = 60
 
-    figpath = 'Thesis/polar_PV/'
+    figpath = 'Thesis/polar_PV/temp_'
 
-    reanalysis = 'OpenMARS'
-    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
+    if EMARS == True:
+        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
+        files = '/*isobaric*'
+        reanalysis = 'EMARS'
+    else:
+        reanalysis = 'OpenMARS'
+        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isobaric'
+        files = '/*isobaric*'
 
     if SD == True:
         sd = '_SD'
@@ -61,8 +68,9 @@ if __name__ == "__main__":
         ax.tick_params(length = 6, labelsize = 18)
 
         if i < 3:
-            ax.set_ylim([-0.4, 11.9])
-            ax.set_yticks([0,2,4,6,8,10])
+            print(i)
+            #ax.set_ylim([-0.4, 11.9])
+            #ax.set_yticks([0,2,4,6,8,10])
         else:
             ax.set_ylim([68,88])
             ax.set_yticks([70,72.5,75,77.5,80,82.5,85,87.5])
@@ -140,23 +148,31 @@ if __name__ == "__main__":
 
 
     
-    d = xr.open_mfdataset(PATH+'OpenMARS_Ls0-360_PV_350K.nc', decode_times=False)
+    d = xr.open_mfdataset(PATH+files, decode_times=False, concat_dim='time',
+                           combine='nested',chunks={'time':'auto'})
 
-    smooth = 250
-    d = d.sortby('time', ascending=True)
-    yearmax = 33
+    if EMARS==True:
+        d["Ls"] = d.Ls.expand_dims({"lat":d.lat})
+        #d = d.rename({"pfull":"plev"})
+        #d = d.rename({"t":"tmp"})
+        smooth = 200
+        yearmax = 32
+    else:
+        smooth = 250
+        d = d.sortby('time', ascending=True)
+        yearmax = 33
 
     d = d.where(d.lat > latmin, drop = True)
     d = d.where(d.lat < latmax, drop = True)
-    #d = d.sel(ilev = ilev, method='nearest').squeeze()
+    d = d.sel(plev = ilev/100, method='nearest').squeeze()
 
     latm = d.lat.max().values
 
     # Lait scale PV
-    theta = ilev
-    print("Scaling PV")
-    laitPV = funcs.lait(d.PV, theta, theta0, kappa = kappa)
-    d["scaled_PV"] = laitPV
+    ##theta = d.ilev
+    #print("Scaling PV")
+    #laitPV = funcs.lait(d.PV, theta, theta0, kappa = kappa)
+    ##d["scaled_PV"] = laitPV
     
     reanalysis_clim = []
     reanalysis_ls = []
@@ -172,12 +188,14 @@ if __name__ == "__main__":
         di = d.where(d.MY == i, drop=True)
         print(i)
         di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
+        if EMARS == True:
+            di = di.sortby(di.Ls, ascending=True)
         di = di.transpose("lat","lon","time")
         di = di.sortby("lat", ascending = True)
         di = di.sortby("lon", ascending = True)
         di = di.mean(dim = "lon")
-        Zi = di.scaled_PV * 10**4
-
+        #Zi = di.scaled_PV * 10**4
+        Zi = di.tmp
         q0 = []
         qm = []
 
@@ -187,7 +205,10 @@ if __name__ == "__main__":
         
 
         for l in range(len(Zi.time)):
-            q = Zi.sel(time=Zi.time[l],method="nearest")
+            if EMARS == True:
+                q = Zi[l,:]
+            else:
+                q = Zi.sel(time=Zi.time[l],method="nearest")
             
             qmax = q.mean(dim="lat").values
             qlat, _ = funcs.calc_jet_lat(q, q.lat)
@@ -307,266 +328,5 @@ if __name__ == "__main__":
     cimax.append(clim00)
 
     
-    plt.savefig(figpath+'all_'+str(ilev)+'K_'+reanalysis+sd+'.pdf',
-                bbox_inches='tight',pad_inches=0.1)
-
-
-    
-    exp = ['control_',
-           'lh_',
-           'dust_',
-           'dust_lh_',
-           'topo_',
-           'topo_lh_',
-           'topo_dust_',
-           'topo_dust_lh_']
-
-    labels = [
-        'Reanalysis', 'Control', 'LH', 'D', 'LH+D', 'T','LH+T', 'D+T', 'LH+D+T',
-        ]
-
-    colors = [
-        '#56B4E9',
-        '#0072B2',
-        '#F0E442',
-        '#E69F00',
-        '#009E73',
-        '#CC79A7',
-        '#D55E00',
-        '#000000',
-        ]
-
-    for i in range(len(exp)):
-        print(exp[i])
-        
-        d = xr.open_mfdataset(PATH+exp[i]+'Ls0-360_PV_350K.nc',
-                                decode_times=False)
-
-        # reduce dataset
-        d = d.astype('float32')
-        d = d.sortby('new_time', ascending=True)
-        d = d.sortby('lat', ascending=True)
-        d = d.sortby('lon', ascending=True)
-        d = d[["PV", "mars_solar_long"]]
-
-        #d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.3762, other=359.762)
-        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.37808, other = 359.762)
-
-        x = d.squeeze()
-
-        x = x.where(d.lat > latmin, drop = True)
-        x = x.where(d.lat < latmax, drop = True)
-
-        latm = x.lat.max().values
-
-        x = x.transpose("lat","lon","new_time","MY")
-
-        theta = ilev
-        laitPV = funcs.lait(x.PV, theta, theta0, kappa = kappa)
-        x["scaled_PV"] = laitPV
-
-        ens = x.scaled_PV * 10**4
-
-        x["ens"] = ens
-        x = x.mean(dim="lon")
-
-        year_mean = x.mean(dim='MY')
-        
-        Ls1 = year_mean.mars_solar_long.mean(dim="lat").load()
-        year_mean = year_mean.ens.load()
-
-        q0 = []
-        qm = []     
-
-        for l in range(len(year_mean.new_time)):
-            q = year_mean.sel(new_time=year_mean.new_time[l],method="nearest")
-            qmax = q.mean(dim="lat").values
-            qlat, _ = funcs.calc_jet_lat(q, q.lat)
-            if qlat > latm:
-                qlat = latm
-            q0.append(qlat)
-            qm.append(qmax)
-
-        Ls = funcs.moving_average(Ls1, 15)
-        q0 = funcs.moving_average(q0, 15)
-        qm = funcs.moving_average(qm, 15)
-
-        ax = axs[0,2]
-        ax2 = axs[1,2]
-        color = colors[i]
-        label = labels[i+1]
-        if i < 4:
-            linestyle = 'solid'
-        else:
-            linestyle = '--'
-
-        c1, = ax.plot(Ls, qm, label = label, color = color,
-                    linewidth = '1.2', linestyle = linestyle)
-        Ls = funcs.moving_average(Ls, 5)
-        q0 = funcs.moving_average(q0, 5)
-        Ls = np.where(Ls >170, Ls, None)
-        c2, = ax2.plot(Ls, q0, label = label, color = color,
-                    linewidth = '1.2', linestyle = linestyle)
-
-        
-        ci.append(c1)
-        cimax.append(c2)
-
-        if SD == True:
-            x = x.mean(dim="lat")
-            year_max = x.max(dim='MY')
-            year_min = x.min(dim='MY')
-            year_max = year_max.ens.chunk({'new_time':'auto'})
-            year_max = year_max.rolling(new_time=15,center=True)
-            year_max = year_max.mean()
-            year_min = year_min.ens.chunk({'new_time':'auto'})
-            year_min = year_min.rolling(new_time=15,center=True)
-            year_min = year_min.mean()
-    
-            ax.fill_between(Ls1, year_min, year_max, color=color, alpha=.1)
-        
-
-        plt.savefig(figpath+'all_'+str(ilev)+'K_'+reanalysis+sd+'.pdf',
-                bbox_inches='tight',pad_inches=0.1)
-
-    c0 = [[ci[j]] for j in range(len(ci))]
-    c1 = [[cimax[j]] for j in range(len(cimax))]
-
-    axs[0,2].legend([tuple(c0[j]) for j in range(len(c0))], [i for i in labels],
-                 fontsize = 14, loc = 'center left', handlelength = 3,
-            handler_map={tuple: HandlerTuple(ndivide=None)})
-
-
-    axs[1,2].legend([tuple(c1[j]) for j in range(len(c1))], [i for i in labels],
-                 fontsize = 14, loc = 'center left', handlelength = 3,
-            handler_map={tuple: HandlerTuple(ndivide=None)})
-
-    plt.savefig(figpath+'all_'+str(ilev)+'K_'+reanalysis+sd+'.pdf',
-                bbox_inches='tight',pad_inches=0.1)
-
-    
-    exp = [
-        'MY24_',
-        'MY25_',
-        'MY26_',
-        'MY27_',
-        'MY28_',
-        'MY29_',
-        'MY30_',
-        'MY31_',
-        'MY32_',
-    ]
-
-    
-    labels = ["MY 24", "MY 25", "MY 26", "MY 27", "MY 28",
-              "MY 29", "MY 30", "MY 31", "MY 32",]
-
-    ci = []
-    cimax = []
-    cu = []
-    cumax = []
-
-    for i in range(len(exp)):
-        print(exp[i])
-        label = labels[i]
-
-        d = xr.open_mfdataset(PATH+exp[i]+'Ls0-360_PV_350K.nc', decode_times=False)
-
-        # reduce dataset
-        d = d.astype('float32')
-        d = d.sortby('new_time', ascending=True)
-        d = d.sortby('lat', ascending=True)
-        d = d.sortby('lon', ascending=True)
-        d = d[["PV", "mars_solar_long"]]
-
-        #d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.3762, other=359.762)
-
-
-        #x = d.sel(ilev=ilev, method='nearest').squeeze()
-
-        x = d.where(d.lat > latmin, drop = True)
-        x = x.where(d.lat < latmax, drop = True)
-
-        latm = x.lat.max().values
-
-        x = x.transpose("lat","lon","new_time","MY")
-
-        theta = ilev
-        laitPV = funcs.lait(x.PV, theta, theta0, kappa = kappa)
-        x["scaled_PV"] = laitPV
-
-        ens = x.scaled_PV * 10**4
-
-        x["ens"] = ens
-        
-        x = x.mean(dim="lon")
-
-        year_mean = x.mean(dim='MY')
-
-        Ls = year_mean.mars_solar_long.mean(dim="lat").load()
-        year_mean = year_mean.ens.load()
-
-        q0 = []
-        qm = []
-
-        for l in range(len(year_mean.new_time)):
-            q = year_mean.sel(new_time=year_mean.new_time[l],method="nearest")
-            qmax = q.mean(dim="lat").values
-            qlat, _ = funcs.calc_jet_lat(q, q.lat)
-            if qlat > latm:
-                qlat = latm
-            q0.append(qlat)
-            qm.append(qmax)
-        
-
-        Ls = funcs.moving_average(Ls, 15)
-        q0 = funcs.moving_average(q0, 15)
-        qm = funcs.moving_average(qm, 15)
-
-        ax = axs[0,1]
-        ax2 = axs[1,1]
-        linestyle1 = 'solid'
-
-        if i < 4:
-            color1 = cols[0]
-            label = labs[0]
-            w = '1'
-
-        elif i == 4:
-            color1 = cols[1]
-            label = labs[1]
-            w = '2'
-        else:
-            color1 = cols[2]
-            label = labs[2]
-            w = '1'
-        c1, = ax.plot(Ls, qm, label = label, color=color1,
-                        linestyle=linestyle1, linewidth = w)
-        
-        Ls = funcs.moving_average(Ls, 5)
-        q0 = funcs.moving_average(q0, 5)
-        Ls = np.where(Ls >170, Ls, None)
-        c2, = ax2.plot(Ls, q0, label = label, color=color1,
-                        linestyle=linestyle1, linewidth = w)
-
-        ci.append(c1)
-        cimax.append(c2)
-
-        plt.savefig(figpath+'all_'+str(ilev)+'K_'+reanalysis+sd+'.pdf',
-                    bbox_inches='tight',pad_inches=0.1)
-    
-    c0 = [[ci[j]] for j in [0,4,5]]
-    c1 = [[cimax[j]] for j in [0,4,5]]
-
-    axs[0,1].legend([tuple(c0[j]) for j in [0,1,2]], [i for i in labs],
-                 fontsize = 14, loc = 'center left', handlelength = 3,
-            handler_map={tuple: HandlerTuple(ndivide=None)})
-
-    axs[1,1].legend([tuple(c1[j]) for j in [0,1,2]], [i for i in labs],
-                 fontsize = 14, loc = 'center left', handlelength = 3,
-            handler_map={tuple: HandlerTuple(ndivide=None)})
-
     plt.savefig(figpath+'all_'+str(ilev)+'K_'+reanalysis+sd+'.pdf',
                 bbox_inches='tight',pad_inches=0.1)

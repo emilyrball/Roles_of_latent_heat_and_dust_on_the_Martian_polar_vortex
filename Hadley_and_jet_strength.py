@@ -33,7 +33,6 @@ if __name__ == "__main__":
     kappa = 1/4.0
     p0 = 610.
 
-    EMARS = False
     SD = False
     ilev = 50
 
@@ -45,18 +44,11 @@ if __name__ == "__main__":
 
     figpath = 'OpenMARS_figs/Hadley_lats/'
 
-    if EMARS == True:
-        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
-        files = '/*isobaric*'
-        reanalysis = 'EMARS'
-        yearmax = 32
-        smooth = 200
-    else:
-        reanalysis = 'OpenMARS'
-        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isobaric'
-        files = '/*isobaric*'
-        yearmax = 33
-        smooth = 250
+    reanalysis = 'OpenMARS'
+    PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isobaric'
+    files = '/*isobaric*'
+    yearmax = 33
+    smooth = 250
 
     if SD == True:
         sd = '_SD'
@@ -148,32 +140,24 @@ if __name__ == "__main__":
     cimax = []
     cu = []
     cumax = []
-
+    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/OpenMARS_'
+    d = xr.open_mfdataset(PATH + 'Ls200-360_u_50Pa.nc', decode_times=False)
+    
+    d = d.where(d.lat > latmin, drop = True)
+    d = d.where(d.lat < latmax, drop = True)
+    d = d.where(d.Ls > 200, drop = True)
+    d = d.where(d.Ls <= 360, drop = True)
+    latm = d.lat.max().values
+    d = d.transpose("lat","lon","time")
+    d["Ls"] = d.Ls.sel(lat=d.lat[0]).sel(lon=d.lon[0])
+    d = d.sortby("lat", ascending = True)
+    d = d.sortby("lon", ascending = True)
     for i in list(np.arange(24,yearmax,1)):
         if i == 27:
             continue
-
-        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/'
-    
-        infiles = 'Isobaric/*isobaric*my'+str(i)+'*'
-        d = xr.open_mfdataset(PATH+infiles, decode_times=False, concat_dim='time',
-                           combine='nested',chunks={'time':'auto'})
-
-        d = d.where(d.lat > latmin, drop = True)
-        d = d.where(d.lat < latmax, drop = True)
-        d = d.where(d.Ls > 200, drop = True)
-        d = d.where(d.Ls <= 360, drop = True)
-        d = d.sel(plev = ilev, method='nearest').squeeze()
-
-        latm = d.lat.max().values
         print(i)
-        di = d.transpose("lat","lon","time")
-        di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
-        if EMARS == True:
-            di = di.sortby(di.Ls, ascending=True)
-        di = di.sortby("lat", ascending = True)
-        di = di.sortby("lon", ascending = True)
-        di = di.where(di.MY == i, drop = True)
+        di = d.where(d.MY == i, drop = True)
+        
         di["Ls"] = di.Ls.sel(lat = 5, method = 'nearest', drop = True).squeeze()
         #di = di.sortby("time", ascending = True)
         di = di.mean(dim = "lon")
@@ -187,10 +171,7 @@ if __name__ == "__main__":
         Ls = di.Ls.load()
 
         for l in range(len(Zi.time)):
-            if EMARS == True:
-                q = Zi[:,l]
-            else:
-                q = Zi.sel(time=Zi.time[l],method="nearest")
+            q = Zi.sel(time=Zi.time[l],method="nearest")
             
             qlat, qmax = funcs.calc_jet_lat(q, q.lat)
             if qlat > latm:
@@ -198,10 +179,6 @@ if __name__ == "__main__":
             q0.append(qlat)
             qm.append(qmax)
         
-        #Zi = Zi.chunk({'time':'auto'})
-        #Zi = Zi.rolling(time=smooth,center=True)
-
-        #Zi = Zi.mean()
         if i != 28:
             reanalysis_clim.append(qm)
             reanalysis_lat.append(q0)
@@ -247,30 +224,27 @@ if __name__ == "__main__":
         plt.savefig(figpath+'all_' +str(ilev)+ 'Pa_'+reanalysis+sd+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
+
         year = 'MY'+str(i)
-        infiles = 'Streamfn/'+year+'_180-360_psi.nc'
-        d = xr.open_mfdataset(PATH + infiles, decode_times = False,
-                          concat_dim = 'time', combine = 'nested',
-                          chunks = {'time' : 'auto'})
+        di = xr.open_mfdataset(PATH + year + '_Ls200-360_psi.nc',
+                                            decode_times = False)
         
                            
 
         ##### reduce dataset #####
-        d = d.astype('float32')
-        d = d.sortby('time', ascending =True) / 10 ** 8
-        d = d.sortby('lat', ascending = False)
+        di = di.astype('float32')
+        di = di.sortby('time', ascending =True) / 10 ** 8
+        di = di.sortby('lat', ascending = False)
 
-        d = d.where(d.time <= Lsmax, drop=True)
-        #d = d.where(Lsmin - 10 <= d.time, drop=True)
+        di = di.where(di.time <= Lsmax, drop=True)
 
-        plev = d.pfull.sel(pfull = ilev, method = "nearest").values
+        plev = di.pfull.sel(pfull = ilev, method = "nearest").values
 
-        #d = d.sel(time = d.time[slice(None,None,5)], method = "nearest")
-        latm = d.lat.max().values
-        Ls = d.time.load()
+        latm = di.lat.max().values
+        Ls = di.time.load()
 
         Ls.load()
-        d.load()
+        di.load()
 
         q0 = []
         qm = []
@@ -278,13 +252,9 @@ if __name__ == "__main__":
 
         for j in range(Ls.shape[0]):
             lsj = Ls[j]
-            psi_j = d.where(d.time == lsj, drop = True).squeeze()
+            psi_j = di.where(di.time == lsj, drop = True).squeeze()
             psi_j = psi_j.to_array().squeeze()
-            #psi_j = psi_j.where(psi_j.pfull < 250, drop = True)
-            #psi_max = psi_j.max(skipna = True).values
-                     
-            
-            # edge and strength of Hadley cell
+
             psi_j = psi_j.sel(pfull = plev, method = "nearest").squeeze()
             psi_j.load()
             _, psi_max = funcs.calc_jet_lat(psi_j, psi_j.lat)

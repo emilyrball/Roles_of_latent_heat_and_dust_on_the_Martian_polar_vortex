@@ -32,15 +32,15 @@ if __name__== "__main__":
 
     ### choose your files
     exp = [
-        'soc_mars_mk36_per_value70.85_none_mld_2.0',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_lh_rel',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05_lh_rel',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel',
-        ]
+        'control_',
+        'topo_',
+        'lh_',
+        'topo_lh_',
+        'dust_',
+        'topo_dust_',
+        'dust_lh_',
+        'topo_dust_lh_',        
+    ]
 
     labels = [
         'Control',
@@ -51,49 +51,14 @@ if __name__== "__main__":
         'D+T',
         'LH+D',
         'LH+D+T',
-        ]
-              #'Control', 'Latent Heat', 'Dust', 'Latent Heat\nand Dust']
+    ]
 
-    location = [
-        'triassic',
-        'triassic',
-        'triassic',
-        'triassic',
-        'anthropocene',
-        'anthropocene',
-        'anthropocene',
-        'silurian',
-        ]
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file = [
-        35,
-        35,
-        35,
-        35,
-        35,
-        35,
-        35,
-        35,
-        ]
-    end_file = [
-        99,
-        99,
-        99,
-        99,
-        99,
-        99,
-        99,
-        92,
-        ]
+    filepath = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
+    
 
     figpath = 'Isca_figs/PV_maps/'
 
-    freq = 'daily'
-
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
     ilev = 300.
-
 
     theta, center, radius, verts, circle = funcs.stereo_plot()
 
@@ -142,29 +107,19 @@ if __name__== "__main__":
 
     
 
-    for i in range(len(start_file)):
+    for i in range(len(exp)):
         if i % 2 == 0:
             boundaries, _, _, cmap, norm = funcs.make_colourmap(
                                                     vmin[int(i/2)], vmax[int(i/2)], step[int(i/2)],
                                                     col = 'viridis', extend = 'both')
 
-        filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
+        i_files = filepath+exp[i]+'Ls270-300_300K.nc'
 
-        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested')
+        d = xr.open_dataset(i_files, decode_times=False)
 
         # reduce dataset
         d = d.astype('float32')
-        d = d.sortby('time', ascending=True)
-
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d = d.where(d.mars_solar_long != 354.37808, other=359.762)
-        print(d.mars_solar_long[-1].values)
-
+        d = d.sortby('new_time', ascending=True)
         
         d = d.where(d.mars_solar_long <= Lsmax, drop=True)
         d = d.where(Lsmin <= d.mars_solar_long, drop=True)
@@ -176,10 +131,11 @@ if __name__== "__main__":
         x = d.sel(ilev=ilev, method='nearest').squeeze()
 
         # Lait scale PV
-        theta = x.ilev
+        theta = ilev
         print("Scaling PV")
         laitPV = funcs.lait(x.PV,theta,theta0,kappa=kappa)
         x["scaled_PV"]=laitPV
+        x = x.mean(dim="MY")
 
         # individual plots
         for j, ax in enumerate(fig.axes):
@@ -187,8 +143,8 @@ if __name__== "__main__":
                 funcs.make_stereo_plot(ax, [latm, 80, 70, 60, 55],
                           [-180, -120, -60, 0, 60, 120, 180],
                           circle, alpha = 0.3, linestyle = '--',)
-                a = x.scaled_PV.mean(dim='time').squeeze() * 10**4
-                u = x.uwnd.mean(dim='time').squeeze()
+                a = x.scaled_PV.mean(dim='new_time').squeeze() * 10**4
+                u = x.uwnd.mean(dim='new_time').squeeze()
                 q_max = []
                 a = a.load()
                 for l in range(len(a.lon)):
@@ -199,7 +155,7 @@ if __name__== "__main__":
                                 norm=norm,levels=[-50]+boundaries+[150])
                 c0 = ax.plot(a.lon, q_max,transform=ccrs.PlateCarree(),
                      color='blue', linewidth=1)
-                c = ax.contour(x.lon, x.lat, u, colors='0.8', levels=[0,50,100],
+                c = ax.contour(x.lon, x.lat, u, colors='1', levels=[0,50,100],
                                 transform=ccrs.PlateCarree(),linewidths = 1)
 
                 c.levels = [funcs.nf(val) for val in c.levels]

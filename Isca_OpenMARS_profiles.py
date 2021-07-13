@@ -60,53 +60,17 @@ if __name__ == "__main__":
 
     ### choose your files
     exp = [
-        #'soc_mars_mk36_per_value70.85_none_mld_2.0',
-        #'soc_mars_mk36_per_value70.85_none_mld_2.0_lh_rel',
-        #'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
-        #'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05_lh_rel',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05',
-        'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel',
+        #'control_',
+        #'lh_',
+        #'dust_',
+        #'dust_lh_',
+        'topo_',
+        'topo_lh_',
+        'topo_dust_',
+        'topo_dust_lh_',
     ]
 
 
-    location = [
-        #'triassic',
-        #'triassic',
-        #'anthropocene',
-        #'anthropocene',
-        'triassic',
-        'triassic',
-        'anthropocene',
-        'silurian',
-    ]
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file = [
-        #33,
-        #33,
-        #33,
-        #33,
-        33,
-        33,
-        33,
-        33,
-        ]
-    end_file = [
-        #99,
-        #99, 
-        #99, 
-        #99, 
-        99, 
-        99, 
-        99, 
-        139,
-        ]
-
-    freq = 'daily'
-
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_PV.nc'
     pfull = 1.
 
     figpath = 'Thesis/vertical_profiles/'
@@ -115,7 +79,7 @@ if __name__ == "__main__":
     Lsmax = 300.
 
 
-    inpath = 'link-to-anthro/OpenMARS/Isobaric/'
+    inpath = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
 
 
     fig0, axs0 = plt.subplots(nrows=1,ncols=5, figsize = (20,6))
@@ -263,8 +227,7 @@ if __name__ == "__main__":
     axs2[0].spines['top'].set_linewidth(3)
     axs2[0].spines['bottom'].set_linewidth(3)
 
-    ds = xr.open_mfdataset(inpath + '*mars_my*', decode_times=False, concat_dim='time',
-                           combine='nested')
+    ds = xr.open_mfdataset(inpath + 'OpenMARS_Ls270-300_zonal.nc', decode_times=False)
 
     ds = ds.where(Lsmin <= ds.Ls, drop = True)
     ds = ds.where(ds.Ls <= Lsmax, drop = True)
@@ -273,12 +236,12 @@ if __name__ == "__main__":
 
     ds = ds.where(ds.lat >= 0, drop=True)
 
-    t1 = ds.tmp.mean(dim='time').mean(dim='lon')
-    u1 = ds.uwnd.mean(dim='time').mean(dim='lon')
-    theta1 = ds.theta.mean(dim='time').mean(dim='lon')
+    t1 = ds.tmp.mean(dim='time')
+    u1 = ds.uwnd.mean(dim='time')
+    theta1 = ds.theta.mean(dim='time')
 
     lait1 = funcs.lait(ds.PV, ds.theta, theta0, kappa=kappa)
-    lait1 = lait1.mean(dim='time').mean(dim='lon')*10**4
+    lait1 = lait1.mean(dim='time')*10**4
 
     p = ds.plev
     lat = ds.lat
@@ -325,42 +288,28 @@ if __name__ == "__main__":
 
     data = []
 
-    for i in range(len(start_file)):
+    for i in range(len(exp)):
 
-        filepath = '/export/'+location[i]+'/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
-    
-        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
-        
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
+        d = xr.open_mfdataset(inpath+exp[i]+'Ls270-300_zonal.nc', decode_times=False, concat_dim='time',
                             combine='nested')
-
 
         # reduce dataset
         d = d.astype('float32')
         d = d.sortby('time', ascending=True)
         d = d[["temp", "ucomp", "PV", "mars_solar_long"]]
 
-
-
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        #d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-        d = d.where(d.mars_solar_long != 354.3762, drop=True)
-
-        d = d.where(d.mars_solar_long <= 285., drop = True)
-        d = d.where(d.mars_solar_long >= 255., drop = True)
+        d = d.where(d.mars_solar_long <= Lsmax, drop = True)
+        d = d.where(d.mars_solar_long >= Lsmin, drop = True)
 
 
         theta = funcs.calculate_theta(d.temp, d.pfull*100, p0=p0, kappa=kappa)
 
         lait = funcs.lait(d.PV, theta, theta0, kappa=kappa)*10**4
 
-        lait = lait.mean(dim='time').mean(dim='lon').squeeze()
+        lait = lait.mean(dim='new_time').squeeze()
 
-        d = d.mean(dim="time").mean(dim="lon").squeeze()
-        theta = theta.mean(dim="time").mean(dim="lon").squeeze()
+        d = d.mean(dim="new_time").squeeze()
+        theta = theta.mean(dim="new_time").squeeze()
 
 
         temp = d.temp.squeeze()
