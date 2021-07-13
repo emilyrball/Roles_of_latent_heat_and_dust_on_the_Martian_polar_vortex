@@ -228,7 +228,7 @@ def calc_jet_lat(u, lats, plot = False):
     u_max = np.where(u == np.ma.max(u.values))[0][0]
 
     if u_max == 0:
-        jet_lat = 90
+        jet_lat = np.max(lats)
         jet_max = u[-1]
     else:
         u_near = u[u_max-1:u_max+2]

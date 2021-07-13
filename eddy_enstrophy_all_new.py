@@ -33,40 +33,20 @@ if __name__ == "__main__":
     kappa = 1/4.0
     p0 = 610.
 
-    EMARS = False
-    SD = False
     ilev = 350
-    norm = False
 
     latmax = 90
     latmin = 60
 
     figpath = 'Thesis/eddy_enstrophy/'
 
-    if EMARS == True:
-        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
-        files = '/*isentropic*'
-        reanalysis = 'EMARS'
-    else:
-        reanalysis = 'OpenMARS'
-        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
-        files = '/*isentropic*'
+    reanalysis = 'OpenMARS'
+    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
     
-    if norm == True:
-        NORM = '_norm'
-        ymin = - 0.5
-        ymax = 9.4
-        tics = [0,1,2,3,4,5,6,7,8,9]
-    else:
-        NORM = ''
-        ymin = - 1
-        ymax = 55
-        tics = [0,10,20,30,40,50]
-
-    if SD == True:
-        sd = '_SD'
-    else:
-        sd = ''
+    NORM = ''
+    ymin = - 1
+    ymax = 55
+    tics = [0,10,20,30,40,50]
 
     linestyles = ['solid', 'dotted','dashed', 'dashdot']
     cols = ['#5F9ED1', '#C85200','#898989']
@@ -137,50 +117,26 @@ if __name__ == "__main__":
             ax.set_xlabel('solar longitude (degrees)', fontsize = 20)
             ax2.set_xticklabels([])
 
-        #elif i == 5:
-        #    ax.text(0.03, 0.88, 'Process-attribution\nsimulations', size = 20,
-        #                transform = ax.transAxes, weight = 'bold')
-        #    ax.set_yticklabels([])
-    
-        #if i > 2:
-        #    ax.set_xlabel('solar longitude (degrees)', fontsize = 20)
-        #    
-        #else:
-        #    ax2.set_xticklabels(newlabel,fontsize=18)
-        #    ax.set_xticklabels([])
-        
-
-
-
     plt.subplots_adjust(hspace=.06, wspace = 0.05)
 
 
-
-
-    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+sd+NORM+'.pdf',
+    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
     
 
 
     
-    d = xr.open_mfdataset(PATH+files, decode_times=False, concat_dim='time',
-                           combine='nested',chunks={'time':'auto'})
+    d = xr.open_dataset(PATH+reanalysis+'_Ls0-360_PV_350K.nc', decode_times=False)
 
-    if EMARS==True:
-        d["Ls"] = d.Ls.expand_dims({"lat":d.lat})
-        #d = d.rename({"pfull":"plev"})
-        #d = d.rename({"t":"tmp"})
-        smooth = 200
-        yearmax = 32
-    else:
-        smooth = 250
-        d = d.sortby('time', ascending=True)
-        yearmax = 33
+
+    smooth = 250
+    d = d.sortby('time', ascending=True)
+    yearmax = 33
 
     d = d.where(d.lat > latmin, drop = True)
     d = d.where(d.lat < latmax, drop = True)
-    d = d.sel(ilev = ilev, method='nearest').squeeze()
+    #d = d.sel(ilev = ilev, method='nearest').squeeze()
     
     reanalysis_clim = []
     reanalysis_ls = []
@@ -191,22 +147,16 @@ if __name__ == "__main__":
         di = d.where(d.MY == i, drop=True)
         print(i)
         di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
-        if EMARS == True:
-            di = di.sortby(di.Ls, ascending=True)
         di = di.transpose("lat","lon","time")
         di = di.sortby("lat", ascending = True)
         di = di.sortby("lon", ascending = True)
 
         # Lait scale PV
-        theta = di.ilev
-        print("Scaling PV")
+        theta = ilev
         laitPV = funcs.lait(di.PV, theta, theta0, kappa = kappa)
         di["scaled_PV"] = laitPV
 
         Zi = funcs.calc_eddy_enstr(di.scaled_PV) * 10**8
-        if norm == True:
-            qbar = laitPV.mean(dim='lat').mean(dim='lon')
-            Zi = Zi/(qbar * 10 **4)
         
         if i != 28:
             reanalysis_clim.append(Zi)
@@ -242,7 +192,7 @@ if __name__ == "__main__":
 
         c.append(ci)
                      
-        plt.savefig(figpath+'eddy_enstrophy_new_' +str(ilev)+ 'K_'+reanalysis+sd+NORM+'.pdf',
+        plt.savefig(figpath+'eddy_enstrophy_new_' +str(ilev)+ 'K_'+reanalysis+NORM+'.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
     c0 = [[c[j]] for j in [0,4,5]]
@@ -279,35 +229,27 @@ if __name__ == "__main__":
     c.append(clim0)
     f.append(clim1)
     
-    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+sd+NORM+'.pdf',
+    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.pdf',
                 bbox_inches='tight',pad_inches=0.1)
 
 
     
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel']
-
+    exp = [
+        'control_',
+        'lh_',
+        'dust_',
+        'dust_lh_',
+        'topo_',
+        'topo_lh_',
+        'topo_dust_',
+        'topo_dust_lh_',
+    ]
+    
     labels = [
         'Reanalysis','Control', 'LH', 'D', 'LH+D',
         'Reanalysis','T', 'LH+T', 'D+T', 'LH+D+T',
         ]
 
-    location = ['triassic','triassic', 'anthropocene', 'anthropocene',
-                'triassic','triassic', 'anthropocene', 'silurian']
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file = [33, 33, 33, 33, 33, 33, 33, 33]
-    end_file = [99, 99, 99, 99, 99, 99, 99, 139]
-
-    #axes.prop_cycle: cycler('color', ['006BA4', 'FF800E', 'ABABAB', '595959', '5F9ED1', 'C85200', '898989', 'A2C8EC', 'FFBC79', 'CFCFCF'])
-    #color = plt.cm.
-    #matplotlib.rcParams['axes.prop_cycle'] = cycler('color', color)
     colors = [
         '#56B4E9',
         '#0072B2',
@@ -318,66 +260,46 @@ if __name__ == "__main__":
         '#D55E00',
         #'#000000',
         ]
-    freq = 'daily'
 
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
+    filepath = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
 
-    for i in range(len(start_file)):
+    for i in range(len(exp)):
         print(exp[i])
         
-
-        filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
-
-        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested')
+        d = xr.open_mfdataset(filepath+exp[i]+'Ls0-360_PV_350K.nc',
+                            decode_times=False)
 
         # reduce dataset
         d = d.astype('float32')
-        d = d.sortby('time', ascending=True)
+        d = d.sortby('new_time', ascending=True)
         d = d.sortby('lat', ascending=True)
         d = d.sortby('lon', ascending=True)
-        d = d[["PV", "mars_solar_long"]]
+        d = d[["PV", "mars_solar_long", "MY"]]
 
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-        d = d.where(d.mars_solar_long != 354.37808, other = 359.7808)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.3762, other=359.762)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.37808, other = 359.78082)
 
-        d, index = funcs.assign_MY(d)
-
-        x = d.sel(ilev=ilev, method='nearest').squeeze()
-
-        x = x.where(d.lat > latmin, drop = True)
+        x = d.where(d.lat > latmin, drop = True)
         x = x.where(d.lat < latmax, drop = True)
 
-        print('Averaged over '+str(np.max(x.MY.values))+' MY')
+        x = x.transpose("lat","lon","new_time", "MY")
 
-        x = x.transpose("lat","lon","time")
-        theta = x.ilev
-        print("Scaling PV")
+        theta = ilev
         laitPV = funcs.lait(x.PV, theta, theta0, kappa = kappa)
         x["scaled_PV"] = laitPV
         ens = funcs.calc_eddy_enstr(x.scaled_PV) * 10**8
-        if norm == True:
-            qbar = laitPV.mean(dim='lat').mean(dim='lon')
-            ens = ens/(qbar * 10 **4)
-
 
         x["ens"] = ens
 
-        dsr, N, n = funcs.make_coord_MY(x, index)
-
-        year_mean = dsr.mean(dim='MY')
+        x = x.mean(dim = "MY", skipna = True)
         
-        Ls = year_mean.mars_solar_long[0,:]
-        year_mean = year_mean.ens.chunk({'new_time':'auto'})
+        Ls = x.mars_solar_long[0,:]
+        year_mean = x.ens.chunk({'new_time':'auto'})
         year_mean = year_mean.rolling(new_time=25,center=True)
         year_mean = year_mean.mean()
 
         linestyle = '-'
+
         if i<4:
             ax = axs[0,1]
             label = labels[i+1]
@@ -391,22 +313,9 @@ if __name__ == "__main__":
             color = colors[i-4]
             c1, = ax.plot(Ls, year_mean, label = label, color = color,
                     linewidth = '1.5', linestyle = linestyle)
-            f.append(c1)
-        
-        if SD == True:
-            year_max = dsr.max(dim='MY')
-            year_min = dsr.min(dim='MY')
-            year_max = year_max.ens.chunk({'new_time':'auto'})
-            year_max = year_max.rolling(new_time=25,center=True)
-            year_max = year_max.mean()
-            year_min = year_min.ens.chunk({'new_time':'auto'})
-            year_min = year_min.rolling(new_time=25,center=True)
-            year_min = year_min.mean()
-    
-            ax.fill_between(Ls, year_min, year_max, color=color, alpha=.1)
-        
+            f.append(c1)      
 
-        plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+sd+NORM+'.pdf',
+        plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.pdf',
                 bbox_inches='tight',pad_inches=0.1)
 
     c0 = [[c[j]] for j in range(len(c))]
@@ -421,83 +330,58 @@ if __name__ == "__main__":
                  fontsize = 14, loc = 'center left', handlelength = 3,
             handler_map={tuple: HandlerTuple(ndivide=None)})
 
-    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+sd+NORM+'.pdf',
+    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.pdf',
                 bbox_inches='tight',pad_inches=0.1)
 
     
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY24_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY25_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY26_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY27_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY28_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY29_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY30_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY31_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY32_7.4e-05_lh_rel',]
-
-    location = ['silurian','silurian', 'silurian', 'silurian',
-                'silurian','silurian', 'silurian', 'silurian', 'silurian']
-    
-
-    freq = 'daily'
-
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file=[30, 35, 35, 35, 35, 35, 35, 35, 35]
-    end_file = [80, 99, 88, 99, 99, 96, 99, 99, 88]
+    exp = [
+        'MY24_',
+        'MY25_',
+        'MY26_',
+        'MY27_',
+        'MY28_',
+        'MY29_',
+        'MY30_',
+        'MY31_',
+        'MY32_',
+    ]
 
     c = []
 
-    for i in range(len(exp)):
+    for i in [0,1,2,3,4,5,6,7,8]:
+        
         print(exp[i])
+        filepath = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
+        
+        i_files = filepath+exp[i]+'Ls0-360_PV_350K.nc'
 
-        filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
-
-        _ ,_ , i_files = funcs.filestrings(exp[i], filepath, start,
-                                        end, interp_file)
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested',chunks={'time':'auto'})
+        d = xr.open_dataset(i_files, decode_times=False)
 
         # reduce dataset
         d = d.astype('float32')
-        d = d.sortby('time', ascending=True)
+        d = d.sortby('new_time', ascending=True)
         d = d.sortby('lat', ascending=True)
         d = d.sortby('lon', ascending=True)
         d = d[["PV", "mars_solar_long"]]
 
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-        print(d.mars_solar_long[0].values)
-
-        d, index = funcs.assign_MY(d)
-
-        x = d.sel(ilev=ilev, method='nearest').squeeze()
-
-        x = x.where(d.lat > latmin, drop = True)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.3762, other=359.762)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.37808, other = 359.78082)
+        
+        x = d.where(d.lat > latmin, drop = True)
         x = x.where(d.lat < latmax, drop = True)
+               
 
-        print('Averaged over '+str(np.max(x.MY.values))+' MY')
 
-        x = x.transpose("lat","lon","time")
-        theta = x.ilev
-        print("Scaling PV")
+        x = x.transpose("lat","lon","new_time", "MY")
+        theta = ilev
         laitPV = funcs.lait(x.PV, theta, theta0, kappa = kappa)
         x["scaled_PV"] = laitPV
         ens = funcs.calc_eddy_enstr(x.scaled_PV) * 10**8
-        if norm == True:
-            qbar = laitPV.mean(dim='lat').mean(dim='lon')
-            ens = ens/(qbar * 10 **4)
 
         x["ens"] = ens
-
-        dsr, N, n = funcs.make_coord_MY(x, index)
-        year_mean = dsr.mean(dim='MY')
-        Ls = year_mean.mars_solar_long[0,:]
-        year_mean = year_mean.ens.chunk({'new_time':'auto'})
+        x = x.mean(dim = "MY", skipna = True)
+        Ls = x.mars_solar_long[0,:]
+        year_mean = x.ens.chunk({'new_time':'auto'})
         year_mean = year_mean.rolling(new_time=25,center=True)
         year_mean = year_mean.mean()
 
@@ -522,14 +406,16 @@ if __name__ == "__main__":
 
         c.append(c1)
 
-        plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+sd+NORM+'.pdf',
+        plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.pdf',
                     bbox_inches='tight',pad_inches=0.1)
     
     c1 = [[c[j]] for j in [0,4,5]]
 
-    axs[1,0].legend([tuple(c1[j]) for j in [0,1,2]], [i for i in labs],
+    axs[1,0].legend([tuple(c1[j]) for j in [0,1,2]], [x for x in labs],
                  fontsize = 14, loc = 'center left', handlelength = 3,
             handler_map={tuple: HandlerTuple(ndivide=None)})
 
-    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+sd+NORM+'.pdf',
+    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.pdf',
+                bbox_inches='tight',pad_inches=0.1)
+    plt.savefig(figpath+'eddy_enstrophy_new_'+str(ilev)+'K_'+reanalysis+NORM+'.png',
                 bbox_inches='tight',pad_inches=0.1)

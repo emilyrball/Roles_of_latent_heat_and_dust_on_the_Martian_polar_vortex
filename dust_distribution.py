@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     boundaries2 = [0.0,0.001,0.002,0.003,0.004,0.005,0.006,0.007,0.008,0.009,
                    0.01,]
-    boundaries2 = [25 * i for i in boundaries2]
+    boundaries2 = [20 * i for i in boundaries2]
     
     cmap_new2 = cm.get_cmap('cet_kbc', len(boundaries2))
     colours2 = list(cmap_new2(np.arange(len(boundaries2))))
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     boundaries3 = [0.000,0.0004,0.0008,0.0012,0.0016,0.002,0.0024,0.0028,
                   0.0032,0.0036,0.004,0.0044,0.0048,0.0052,0.0056,0.006,0.0064,
                   0.0068, 0.0072]
-    boundaries3 = [25 * i for i in boundaries3]
+    boundaries3 = [20 * i for i in boundaries3]
     cmap_new3 = cm.get_cmap('cet_kbc', len(boundaries3))
     colours3 = list(cmap_new3(np.arange(len(boundaries3))))
     cmap3 = colors.ListedColormap(colours3[:-1],"")
@@ -273,7 +273,48 @@ if __name__ == "__main__":
     plt.savefig('Thesis/dust_distributions.pdf',
             bbox_inches = 'tight', pad_inches = 0.1)
 
+    isca_years = []
+    isca_ls = []
 
+
+    filepath = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
+    d_isca = xr.open_dataset(filepath+'topo_dust_lh_Ls0-360_dt_tg_zonal.nc', decode_times=False)
+    # reduce dataset
+    d = d_isca.astype('float32')
+    d = d.sortby('new_time', ascending=True)
+    #d = d[["dt_tg_lh_condensation", "mars_solar_long"]]
+    d = d.rename({'pfull':'plev'})
+
+    d["mars_solar_long"] = d.mars_solar_long.squeeze()
+    
+    #d["dt_tg_lh_condensation"] = d.dt_tg_lh_condensation.where(d.dt_tg_lh_condensation != np.nan, other = 0.0)
+    
+    
+    dsr =d.mean(dim="MY",skipna=True)
+    x = dsr.dt_tg_lh_condensation.mean(dim="lon",skipna=True) * 8
+    
+    print(x.min(skipna=True).values)
+    print(x.max(skipna=True).values)
+
+    Ls = dsr.mars_solar_long
+    xp = x.sel(plev=2.0, method='nearest').squeeze()
+    x80 = x.sel(lat=85, method='nearest').squeeze()
+    #dsr = d.chunk({"new_time":"auto"})
+    #dsr = dsr.rolling(new_time=5,center=True)
+    #dsr = dsr.mean(skipna=True)
+    cf3 = axs3.contourf(Ls, xp.lat, xp.transpose('lat','new_time'),
+                        norm = norm2, cmap=cmap2, levels = [-50] \
+                                                 + boundaries2 + [150])
+    cf5 = axs5.contourf(Ls, xp.lat, xp.transpose('lat','new_time'),
+                        norm = norm2, cmap=cmap2, levels = [-50] \
+                                                 + boundaries2 + [150])
+    cf4 = axs4.contourf(Ls, x80.plev, x80.transpose('plev','new_time'),
+                        norm = norm3, cmap=cmap3, levels = [-50] \
+                                                 + boundaries3 + [150])
+    plt.savefig('Thesis/dust_distributions.pdf',
+        bbox_inches = 'tight', pad_inches = 0.1)
+    plt.savefig('Thesis/dust_distributions.png',
+        bbox_inches = 'tight', pad_inches = 0.1)
 
     pfull = [625, 610, 600, 590, 580, 570, 560, 550, 530, 510, 490, 
              470, 450, 425, 400, 375, 350, 325, 300, 275, 250, 225, 
@@ -303,78 +344,4 @@ if __name__ == "__main__":
             bbox_inches = 'tight', pad_inches = 0.1)
 
 
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel']
-
-    location = ['silurian']
-
-    freq = 'daily'
-
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp.nc'
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file=[25]
-    end_file = [139]
-
-    isca_years = []
-    isca_ls = []
-
-    for i in range(len(exp)):
-        print(exp[i])
-
-        filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
-
-        _ ,_ , i_files = funcs.filestrings(exp[i], filepath, start,
-                                        end, interp_file)
-
-        d_isca = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested',chunks={'time':'auto'})
-
-        # reduce dataset
-        d = d_isca.astype('float32')
-        d = d.sortby('time', ascending=True)
-        d = d[["lh_rel", "dt_tg_lh_condensation", "mars_solar_long"]]
-        d = d.rename({'pfull':'plev'})
-        d = d.mean(dim = 'lon')
-
-        d["mars_solar_long"] = d.mars_solar_long.squeeze()
-        d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-
-        x, index = funcs.assign_MY(d)
-
-        
-        
-        #x = x.where(d.lat < latmax, drop = True)
-
-        print('Averaged over '+str(np.max(x.MY.values))+' MY')
-        
-        ens = x.dt_tg_lh_condensation.where(x.dt_tg_lh_condensation != np.nan, other = 0.0)
-        
-        dsr, N, n = funcs.make_coord_MY(x, index)
-        dsr = dsr.chunk({"new_time":"auto"})
-        dsr = dsr.rolling(new_time=5,center=True)
-        dsr = dsr.mean(skipna=True)
-        x = dsr.dt_tg_lh_condensation.mean(dim="MY")
-        
-        Ls = dsr.mars_solar_long.mean(dim="MY")
-        xp = x.sel(plev=2.0, method='nearest').squeeze()
-
-        x80 = x.sel(lat=85, method='nearest').squeeze()
-        #x = dsr.dt_tg_lh_condensation.where(dsr.MY == dsr.MY[-1],
-        #                    drop=True)
-
-        cf3 = axs3.contourf(Ls[:-6], xp.lat, xp.transpose('lat','new_time')[:,:-6],
-                            norm = norm2, cmap=cmap2, levels = [-50] \
-                                                     + boundaries2 + [150])
-        cf5 = axs5.contourf(Ls[:-6], xp.lat, xp.transpose('lat','new_time')[:,:-6],
-                            norm = norm2, cmap=cmap2, levels = [-50] \
-                                                     + boundaries2 + [150])
-        cf4 = axs4.contourf(Ls[:-6], x80.plev, x80.transpose('plev','new_time')[:,:-6],
-                            norm = norm3, cmap=cmap3, levels = [-50] \
-                                                     + boundaries3 + [150])
-
-
-
-        plt.savefig('Thesis/dust_distributions.pdf',
-            bbox_inches = 'tight', pad_inches = 0.1)
+    

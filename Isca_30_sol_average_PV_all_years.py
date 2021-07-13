@@ -39,31 +39,21 @@ if __name__ == "__main__":
     p0 = 610.
 
     ### choose your files
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY24_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY25_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY26_7.4e-05_lh_rel',
-#           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY27_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY28_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY29_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY30_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY31_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY32_7.4e-05_lh_rel',]
-
-
-    location = ['silurian']
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file=[30, 30, 30, 30, 30, 30, 30, 30]
-    end_file = [80, 99, 88, 99, 96, 99, 99, 88]
+    exp = [
+        'MY24_',
+        'MY25_',
+        'MY26_',
+        'MY28_',
+        'MY29_',
+        'MY30_',
+        'MY31_',
+        'MY32_',
+    ]
 
 
     figpath = 'Isca_figs/PV_maps'
 
-    freq = 'daily'
-
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
     ilev = 300.
-
 
     theta, center, radius, verts, circle = funcs.stereo_plot()
 
@@ -85,25 +75,17 @@ if __name__ == "__main__":
 
     for i in range(len(exp)):
 
-        filepath = '/export/' + location[0] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
+        filepath = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
+        
 
-        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested')
+        d = xr.open_mfdataset(filepath+exp[i]+'Ls270' + \
+                        '-300_300K.nc', decode_times=False)
 
         # reduce dataset
         d = d.astype('float32')
-        d = d.sortby('time', ascending=True)
+        d = d.sortby('new_time', ascending=True)
 
         latm = d.lat.max().values
-
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d = d.where(d.mars_solar_long != 354.37808, other=359.762)
-        print(d.mars_solar_long[-1].values)
-
 
         d = d.where(d.mars_solar_long <= Lsmax, drop=True)
         d = d.where(Lsmin <= d.mars_solar_long, drop=True)
@@ -111,25 +93,15 @@ if __name__ == "__main__":
         d = d.sel(lat=d.lat[55<d.lat])
         d = d.sel(ilev=ilev, method='nearest').squeeze()
 
-        #d, index = assign_MY(d)
         x = d.squeeze()
 
-
-
-        #x = x.where(x.time <= index[-1], drop=True)
-
-        # Lait scale PV
-        theta = x.ilev
+        theta = ilev
         print("Scaling PV")
         laitPV = funcs.lait(x.PV,theta,theta0,kappa=kappa)
         x["scaled_PV"]=laitPV
-
-
-        #dsr, N, n = make_coord_MY(x, index)
+        x = x.mean(dim="MY")
 
         plt.subplots_adjust(hspace=.17,wspace=.02, bottom=0.1)
-
-
 
         # individual plots
         for j, ax in enumerate(fig.axes):
@@ -143,28 +115,22 @@ if __name__ == "__main__":
                                       [-180, -120, -60, 0, 60, 120, 180],
                                       circle, alpha = 0.3, linestyle = '--',)
 
-                #a = dsr.where(dsr.MY==my-24,drop=True)
-                a = x
-
-                u = a.uwnd.mean(dim='time').squeeze()
-                a = a.scaled_PV.mean(dim='time').squeeze() * 10**4
+                u = x.uwnd.mean(dim='new_time').squeeze()
+                x = x.scaled_PV.mean(dim='new_time').squeeze() * 10**4
 
                 q_max = []
-                a = a.load()
-                for l in range(len(a.lon)):
-                    q = a.sel(lon = a.lon[l],method="nearest")
-                    q0, _ = funcs.calc_jet_lat(q, a.lat)
+                x = x.load()
+                for l in range(len(x.lon)):
+                    q = x.sel(lon = x.lon[l],method="nearest")
+                    q0, _ = funcs.calc_jet_lat(q, x.lat)
                     q_max.append(q0)
 
-                cf = ax.contourf(a.lon,a.lat,a,cmap=cmap,transform=ccrs.PlateCarree(),
+                cf = ax.contourf(x.lon,x.lat,x,cmap=cmap,transform=ccrs.PlateCarree(),
                                 norm=norm,levels=[-50]+boundaries+[150])
-                c0 = ax.plot(a.lon, q_max,transform=ccrs.PlateCarree(),
+                c0 = ax.plot(x.lon, q_max,transform=ccrs.PlateCarree(),
                      color='blue', linewidth=1)
     
-                #c0.levels = [funcs.nf(val) for val in c0.levels]
-                #axs[0,0].clabel(c0, c0.levels, inline=1, fmt=fmt, fontsize=14)
-
-                c = ax.contour(x.lon, x.lat, u, colors='0.8', levels=[0,50,100],
+                c = ax.contour(x.lon, x.lat, u, colors='1', levels=[0,50,100],
                                 transform=ccrs.PlateCarree(),linewidths = 1)
                 ax.text(0.05, 0.95, string.ascii_lowercase[j], transform=ax.transAxes, 
                         size=20, weight='bold')

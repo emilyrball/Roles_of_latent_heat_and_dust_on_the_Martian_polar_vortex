@@ -33,8 +33,7 @@ if __name__ == "__main__":
     kappa = 1/4.0
     p0 = 610.
 
-    EMARS = False
-    SD = True
+    SD = False
     ilev = 350
 
     latmax = 90
@@ -42,14 +41,8 @@ if __name__ == "__main__":
 
     figpath = 'Thesis/polar_PV/'
 
-    if EMARS == True:
-        PATH = '/export/anthropocene/array-01/xz19136/EMARS'
-        files = '/*isentropic*'
-        reanalysis = 'EMARS'
-    else:
-        reanalysis = 'OpenMARS'
-        PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
-        files = '/*isentropic*'
+    reanalysis = 'OpenMARS'
+    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/'
 
     if SD == True:
         sd = '_SD'
@@ -147,28 +140,20 @@ if __name__ == "__main__":
 
 
     
-    d = xr.open_mfdataset(PATH+files, decode_times=False, concat_dim='time',
-                           combine='nested',chunks={'time':'auto'})
+    d = xr.open_mfdataset(PATH+'OpenMARS_Ls0-360_PV_350K.nc', decode_times=False)
 
-    if EMARS==True:
-        d["Ls"] = d.Ls.expand_dims({"lat":d.lat})
-        #d = d.rename({"pfull":"plev"})
-        #d = d.rename({"t":"tmp"})
-        smooth = 200
-        yearmax = 32
-    else:
-        smooth = 250
-        d = d.sortby('time', ascending=True)
-        yearmax = 33
+    smooth = 250
+    d = d.sortby('time', ascending=True)
+    yearmax = 33
 
     d = d.where(d.lat > latmin, drop = True)
     d = d.where(d.lat < latmax, drop = True)
-    d = d.sel(ilev = ilev, method='nearest').squeeze()
+    #d = d.sel(ilev = ilev, method='nearest').squeeze()
 
     latm = d.lat.max().values
 
     # Lait scale PV
-    theta = d.ilev
+    theta = ilev
     print("Scaling PV")
     laitPV = funcs.lait(d.PV, theta, theta0, kappa = kappa)
     d["scaled_PV"] = laitPV
@@ -187,8 +172,6 @@ if __name__ == "__main__":
         di = d.where(d.MY == i, drop=True)
         print(i)
         di["Ls"] = di.Ls.sel(lat=di.lat[0]).sel(lon=di.lon[0])
-        if EMARS == True:
-            di = di.sortby(di.Ls, ascending=True)
         di = di.transpose("lat","lon","time")
         di = di.sortby("lat", ascending = True)
         di = di.sortby("lon", ascending = True)
@@ -204,10 +187,7 @@ if __name__ == "__main__":
         
 
         for l in range(len(Zi.time)):
-            if EMARS == True:
-                q = Zi[l,:]
-            else:
-                q = Zi.sel(time=Zi.time[l],method="nearest")
+            q = Zi.sel(time=Zi.time[l],method="nearest")
             
             qmax = q.mean(dim="lat").values
             qlat, _ = funcs.calc_jet_lat(q, q.lat)
@@ -332,32 +312,19 @@ if __name__ == "__main__":
 
 
     
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_cdod_clim_scenario_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_scenario_7.4e-05_lh_rel']
+    exp = ['control_',
+           'lh_',
+           'dust_',
+           'dust_lh_',
+           'topo_',
+           'topo_lh_',
+           'topo_dust_',
+           'topo_dust_lh_']
 
     labels = [
         'Reanalysis', 'Control', 'LH', 'D', 'LH+D', 'T','LH+T', 'D+T', 'LH+D+T',
         ]
 
-    location = ['triassic','triassic', 'anthropocene', 'anthropocene',
-                'triassic','triassic', 'anthropocene', 'silurian']
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file = [33, 33, 33, 33, 33, 33, 33, 33]
-    end_file = [99, 99, 99, 99, 99, 99, 99, 139]
-
-    #axes.prop_cycle: cycler('color', ['006BA4', 'FF800E', 'ABABAB', '595959', '5F9ED1', 'C85200', '898989', 'A2C8EC', 'FFBC79', 'CFCFCF'])
-    #color = plt.cm.
-    #matplotlib.rcParams['axes.prop_cycle'] = cycler('color', color)
-    #['#006BA4', '#FF800E', '#ABABAB', '#595959', '#5F9ED1', '#C85200',
-    #          '#898989', '#A2C8EC', '#FFBC79', '#CFCFCF']
-    #colors = ['#5F9ED1','#006BA4','#FF800E','#C85200']
     colors = [
         '#56B4E9',
         '#0072B2',
@@ -368,62 +335,43 @@ if __name__ == "__main__":
         '#D55E00',
         '#000000',
         ]
-    freq = 'daily'
 
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
-
-    for i in range(len(start_file)):
+    for i in range(len(exp)):
         print(exp[i])
         
-
-        filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
-
-        _, _, i_files = funcs.filestrings(exp[i], filepath, start, end, interp_file)
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested')
+        d = xr.open_mfdataset(PATH+exp[i]+'Ls0-360_PV_350K.nc',
+                                decode_times=False)
 
         # reduce dataset
         d = d.astype('float32')
-        d = d.sortby('time', ascending=True)
+        d = d.sortby('new_time', ascending=True)
         d = d.sortby('lat', ascending=True)
         d = d.sortby('lon', ascending=True)
         d = d[["PV", "mars_solar_long"]]
 
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-        d = d.where(d.mars_solar_long != 354.37808, other = 359.7808)
+        #d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.3762, other=359.762)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.37808, other = 359.762)
 
-        d, index = funcs.assign_MY(d)
-
-        x = d.sel(ilev=ilev, method='nearest').squeeze()
+        x = d.squeeze()
 
         x = x.where(d.lat > latmin, drop = True)
         x = x.where(d.lat < latmax, drop = True)
 
         latm = x.lat.max().values
 
-        print('Averaged over '+str(np.max(x.MY.values))+' MY')
+        x = x.transpose("lat","lon","new_time","MY")
 
-        x = x.transpose("lat","lon","time")
-
-        # Lait scale PV
-        theta = x.ilev
-        print("Scaling PV")
+        theta = ilev
         laitPV = funcs.lait(x.PV, theta, theta0, kappa = kappa)
         x["scaled_PV"] = laitPV
 
         ens = x.scaled_PV * 10**4
-        
 
         x["ens"] = ens
         x = x.mean(dim="lon")
 
-        dsr, N, n = funcs.make_coord_MY(x, index)
-
-        year_mean = dsr.mean(dim='MY')
+        year_mean = x.mean(dim='MY')
         
         Ls1 = year_mean.mars_solar_long.mean(dim="lat").load()
         year_mean = year_mean.ens.load()
@@ -453,12 +401,12 @@ if __name__ == "__main__":
         else:
             linestyle = '--'
 
-        c1, = ax.plot(Ls[:-8], qm[:-8], label = label, color = color,
+        c1, = ax.plot(Ls, qm, label = label, color = color,
                     linewidth = '1.2', linestyle = linestyle)
         Ls = funcs.moving_average(Ls, 5)
         q0 = funcs.moving_average(q0, 5)
         Ls = np.where(Ls >170, Ls, None)
-        c2, = ax2.plot(Ls[:-8], q0[:-8], label = label, color = color,
+        c2, = ax2.plot(Ls, q0, label = label, color = color,
                     linewidth = '1.2', linestyle = linestyle)
 
         
@@ -466,9 +414,9 @@ if __name__ == "__main__":
         cimax.append(c2)
 
         if SD == True:
-            dsr = dsr.mean(dim="lat")
-            year_max = dsr.max(dim='MY')
-            year_min = dsr.min(dim='MY')
+            x = x.mean(dim="lat")
+            year_max = x.max(dim='MY')
+            year_min = x.min(dim='MY')
             year_max = year_max.ens.chunk({'new_time':'auto'})
             year_max = year_max.rolling(new_time=15,center=True)
             year_max = year_max.mean()
@@ -498,29 +446,21 @@ if __name__ == "__main__":
                 bbox_inches='tight',pad_inches=0.1)
 
     
-    exp = ['soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY24_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY25_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY26_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY27_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY28_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY29_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY30_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY31_7.4e-05_lh_rel',
-           'soc_mars_mk36_per_value70.85_none_mld_2.0_with_mola_topo_cdod_clim_MY32_7.4e-05_lh_rel',]
+    exp = [
+        'MY24_',
+        'MY25_',
+        'MY26_',
+        'MY27_',
+        'MY28_',
+        'MY29_',
+        'MY30_',
+        'MY31_',
+        'MY32_',
+    ]
 
-    location = ['silurian','silurian', 'silurian', 'silurian',
-                'silurian','silurian', 'silurian', 'silurian', 'silurian']
     
     labels = ["MY 24", "MY 25", "MY 26", "MY 27", "MY 28",
               "MY 29", "MY 30", "MY 31", "MY 32",]
-
-    freq = 'daily'
-
-    interp_file = 'atmos_'+freq+'_interp_new_height_temp_isentropic.nc'
-
-    #filepath = '/export/triassic/array-01/xz19136/Isca_data'
-    start_file=[30, 35, 35, 35, 35, 35, 35, 35, 35]
-    end_file = [80, 99, 88, 99, 99, 96, 99, 99, 88]
 
     ci = []
     cimax = []
@@ -531,43 +471,29 @@ if __name__ == "__main__":
         print(exp[i])
         label = labels[i]
 
-        filepath = '/export/' + location[i] + '/array-01/xz19136/Isca_data'
-        start = start_file[i]
-        end = end_file[i]
-
-        _ ,_ , i_files = funcs.filestrings(exp[i], filepath, start,
-                                        end, interp_file)
-
-        d = xr.open_mfdataset(i_files, decode_times=False, concat_dim='time',
-                            combine='nested',chunks={'time':'auto'})
+        d = xr.open_mfdataset(PATH+exp[i]+'Ls0-360_PV_350K.nc', decode_times=False)
 
         # reduce dataset
         d = d.astype('float32')
-        d = d.sortby('time', ascending=True)
+        d = d.sortby('new_time', ascending=True)
         d = d.sortby('lat', ascending=True)
         d = d.sortby('lon', ascending=True)
         d = d[["PV", "mars_solar_long"]]
 
-        d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
-        d = d.where(d.mars_solar_long != 354.3762, other=359.762)
-        print(d.mars_solar_long[0].values)
+        #d["mars_solar_long"] = d.mars_solar_long.sel(lon=0)
+        d["mars_solar_long"] = d.mars_solar_long.where(d.mars_solar_long != 354.3762, other=359.762)
 
-        d, index = funcs.assign_MY(d)
 
-        x = d.sel(ilev=ilev, method='nearest').squeeze()
+        #x = d.sel(ilev=ilev, method='nearest').squeeze()
 
-        x = x.where(d.lat > latmin, drop = True)
+        x = d.where(d.lat > latmin, drop = True)
         x = x.where(d.lat < latmax, drop = True)
 
         latm = x.lat.max().values
 
-        print('Averaged over '+str(np.max(x.MY.values))+' MY')
+        x = x.transpose("lat","lon","new_time","MY")
 
-        x = x.transpose("lat","lon","time")
-
-        # Lait scale PV
-        theta = x.ilev
-        print("Scaling PV")
+        theta = ilev
         laitPV = funcs.lait(x.PV, theta, theta0, kappa = kappa)
         x["scaled_PV"] = laitPV
 
@@ -577,8 +503,7 @@ if __name__ == "__main__":
         
         x = x.mean(dim="lon")
 
-        dsr, N, n = funcs.make_coord_MY(x, index)
-        year_mean = dsr.mean(dim='MY')
+        year_mean = x.mean(dim='MY')
 
         Ls = year_mean.mars_solar_long.mean(dim="lat").load()
         year_mean = year_mean.ens.load()
@@ -595,10 +520,6 @@ if __name__ == "__main__":
             q0.append(qlat)
             qm.append(qmax)
         
-        #Zi = Zi.chunk({'time':'auto'})
-        #Zi = Zi.rolling(time=smooth,center=True)
-
-        #Zi = Zi.mean()
 
         Ls = funcs.moving_average(Ls, 15)
         q0 = funcs.moving_average(q0, 15)
@@ -621,13 +542,13 @@ if __name__ == "__main__":
             color1 = cols[2]
             label = labs[2]
             w = '1'
-        c1, = ax.plot(Ls[:-8], qm[:-8], label = label, color=color1,
+        c1, = ax.plot(Ls, qm, label = label, color=color1,
                         linestyle=linestyle1, linewidth = w)
         
         Ls = funcs.moving_average(Ls, 5)
         q0 = funcs.moving_average(q0, 5)
         Ls = np.where(Ls >170, Ls, None)
-        c2, = ax2.plot(Ls[:-8], q0[:-8], label = label, color=color1,
+        c2, = ax2.plot(Ls, q0, label = label, color=color1,
                         linestyle=linestyle1, linewidth = w)
 
         ci.append(c1)

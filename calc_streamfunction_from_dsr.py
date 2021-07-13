@@ -54,7 +54,8 @@ if __name__ == "__main__":
         d = d.sortby('new_time', ascending = True)
 
         d = d.sortby('lat', ascending = False)
-        d = d.sortby('pfull', ascending = True)  
+        d = d.sortby('pfull', ascending = True)
+        d["pfull"] = d.pfull*100
 
         plev = d.pfull.sel(pfull = plev, method = "nearest").values
         

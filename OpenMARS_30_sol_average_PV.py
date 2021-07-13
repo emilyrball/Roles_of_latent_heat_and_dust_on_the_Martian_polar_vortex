@@ -64,13 +64,12 @@ if __name__ == "__main__":
         proj = ccrs.NorthPolarStereo()
 
 
-    PATH = '/export/anthropocene/array-01/xz19136/OpenMARS/Isentropic'
-    infiles = '/isentropic*'
+    PATH = '/export/anthropocene/array-01/xz19136/Data_Ball_etal_2021/OpenMARS_'
+    
 
     figpath = 'OpenMARS_figs/PV_maps'
 
-    d = xr.open_mfdataset(PATH+infiles, decode_times=False, concat_dim='time',
-                           combine='nested',chunks={'time':'auto'})
+    d = xr.open_mfdataset(PATH+'Ls270-300_300K.nc', decode_times=False)
 
 
     # reduce dataset
@@ -78,7 +77,7 @@ if __name__ == "__main__":
     d = d.sortby('time', ascending=True)
     d = d.where(d.Ls <= Lsmax, drop=True)
     d = d.where(Lsmin <= d.Ls, drop=True)
-    d = d.sel(ilev=ilev, method='nearest')
+    #d = d.sel(ilev=ilev, method='nearest')
     
     if sh == True:
         latm = d.lat.min().values
@@ -111,7 +110,7 @@ if __name__ == "__main__":
 
 
     # Lait scale PV
-    theta = x.ilev
+    theta = ilev
     laitPV = funcs.lait(x.PV,theta,theta0,kappa=kappa)
     x["scaled_PV"]=laitPV
 
@@ -156,7 +155,7 @@ if __name__ == "__main__":
                     cmap=cmap0,levels=[-100]+boundaries0+[500], norm=norm0)
         c0 = ax.plot(a0.lon, q_max,transform=ccrs.PlateCarree(),
                      color='blue', linewidth=1)
-        c0 = ax.contour(x0.lon, x0.lat, x0.uwnd,colors='0.8',levels=[0,50,100],
+        c0 = ax.contour(x0.lon, x0.lat, x0.uwnd,colors='1',levels=[0,50,100],
                         transform=ccrs.PlateCarree(),linewidths = 1)
 
         c0.levels = [funcs.nf(val) for val in c0.levels]

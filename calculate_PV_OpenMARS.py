@@ -20,7 +20,7 @@ def calculate_pfull(psurf, siglev):
 
     return psurf*siglev
 
-if "__name__" == "__main__":
+if __name__ == "__main__":
     ### choose your desired isotropic levels, in Pascals
     plev1 = [float(i/10) for i in range(1,100,5)]
     plev2 = [float(i) for i in range(10,100,10)]
